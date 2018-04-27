@@ -12,5 +12,6 @@
         <module name="personalTool" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel target="7" />
   </component>
 </project>

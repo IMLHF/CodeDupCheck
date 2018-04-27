@@ -50,6 +50,11 @@ public class Program implements ProgramI {
     }
 
 
+    public int getCid() {
+        return options.cid;
+    }
+
+
     public void print(String msg) {
         if (options.msg_quiet)
             return;
@@ -118,7 +123,15 @@ public class Program implements ProgramI {
             }
         } else {
             //from DB
-            submissions=dbHelper.getSubmissionList();
+            Vector<SubmissionBase> base=dbHelper.getSubmissionList();
+            Iterator<SubmissionBase> iter=base.iterator();
+            while (iter.hasNext()){
+                SubmissionBase tempBase=iter.next();
+                submissions.addElement(
+                        new Submission(""+tempBase.runid,tempBase.name,tempBase.code,
+                                this,this.options.language)
+                );
+            }
         }
     }
 
@@ -167,6 +180,7 @@ public class Program implements ProgramI {
     }
     private void compare(){
         int size=submissions.size();
+
 
     }
     private void run() throws ExitException {

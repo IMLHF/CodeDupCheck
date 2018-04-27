@@ -1,8 +1,8 @@
 package personalTool;
 
 import cdc.DBHelper;
-import cdc.Program;
-import cdc.Submission;
+import cdc.ProgramI;
+import cdc.SubmissionBase;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
@@ -10,15 +10,14 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
 public class MongoDBHeler implements DBHelper {
-    Program program;
+    ProgramI program;
     Document contestDoc;
     List problemList;
-    public MongoDBHeler(Program p){
+    public MongoDBHeler(ProgramI p){
         program=p;
     }
     public boolean isHaveProblemNotCheck(){
@@ -34,7 +33,7 @@ public class MongoDBHeler implements DBHelper {
             MongoCollection<Document> dbCollection_SDUTOJ = mongoDB.getCollection("SDUTOJ");
 
             contestDoc = dbCollection_SDUTOJ.find(
-                    Filters.eq("contest_id", String.valueOf(this.program.options.cid))).first();
+                    Filters.eq("contest_id", String.valueOf(this.program.getCid()))).first();
 
 
             //System.out.println("contest_id: " + contest_doc.get("problem"));
@@ -47,19 +46,17 @@ public class MongoDBHeler implements DBHelper {
         }
     }
 
-    public Vector<Submission> getSubmissionList() {
+    public Vector<SubmissionBase> getSubmissionList() {
         Document problemDoc = (Document) problemList.get(0);
         problemList.remove(0);
         Vector<Document> mongoSubmitList = (Vector<Document>) problemDoc.get("all_submit_record");
-        Vector<Submission> submissions=new Vector<Submission>();
+        Vector<SubmissionBase> submissions=new Vector<SubmissionBase>();
         for (int i = 0; i < mongoSubmitList.size(); i++) {
             int runid=Integer.parseInt(mongoSubmitList.elementAt(i).get("runid").toString());
             String name = mongoSubmitList.get(i).get("username").toString()+"_Runid_"
                     +String.valueOf(runid);
             String code=mongoSubmitList.elementAt(i).get ("code").toString();
-            submissions.addElement(new Submission(
-                    runid,name,code,program,program.options.language
-            ));
+            submissions.addElement(new SubmissionBase(runid,name,code));
 
         }
         return null;

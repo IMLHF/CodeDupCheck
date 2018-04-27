@@ -27,6 +27,7 @@ public class Submission implements Comparable<Submission>{
         this.program=p;
         this.language=language;
     }
+
     public Submission(String file, String name, String code, Program p, Language language){
         this.file=file;
         this.name=name;

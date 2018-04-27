@@ -36,8 +36,8 @@ public class PairSubmission extends Matches implements Comparator<PairSubmission
     }
 
     public final float percent() {
-        float sa = subA.size() - 1;
-        float sb = subB.size() - 1;
+        float sa = subA.tokenLength() - 1;
+        float sb = subB.tokenLength() - 1;
         return ((float)tokensMatched()*200)/(sa+sb);
     }
 

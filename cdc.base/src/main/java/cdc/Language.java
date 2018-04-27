@@ -21,7 +21,7 @@ public interface Language {
 
     public boolean usesIndex();
 
-    public boolean numOfTokens();
+    public int numOfTokens();
 
     public String type2string(int type);
 

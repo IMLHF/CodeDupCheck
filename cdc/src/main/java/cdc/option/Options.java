@@ -11,7 +11,7 @@ abstract public class Options {
     };
     protected static String[] languages={
             "python3", "jplag.python3.Language",
-            "cpp14",   "jplag.cpp14.Language",
+            "cdc/cpp14",   "jplag.Language",
             "c#",    "jplag.csharp6.Language"
     };
 
