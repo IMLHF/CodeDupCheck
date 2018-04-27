@@ -166,6 +166,7 @@ public class Program implements ProgramI {
 
     }
     private void compare(){
+        int size=submissions.size();
 
     }
     private void run() throws ExitException {
