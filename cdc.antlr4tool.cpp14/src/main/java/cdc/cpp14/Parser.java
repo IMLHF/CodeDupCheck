@@ -69,7 +69,7 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
         struct.addToken(new CPP14Token(type, (currentFile == null ? "null" : currentFile), tok.getLine(), tok.getCharPositionInLine() + 1,
                 tok.getText().length()));
         //TODO debug
-//        System.out.println("cpp14 parser.java ling 76  :"+ CPP14Token.type2string(type)
+//        System.out.println("cpp14 parser.java line 72  :"+ CPP14Token.type2string(type)
 //                +"\nline : "+tok.getLine()
 //                +"\nCharPositionInLine : "+tok.getCharPositionInLine()
 //                +"\nlength : "+tok.getText().length()
