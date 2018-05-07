@@ -14,6 +14,9 @@ public class Submission implements Comparable<Submission>{
     private int pid;
     private int runid;//from DB
 
+    public int getCid(){return cid;}
+    public int getPid(){return pid;}
+    public int getRunid(){return runid;}
     private String file;//from file
 
     public String name;
@@ -53,31 +56,6 @@ public class Submission implements Comparable<Submission>{
         if(struct!=null)
             return struct.tokenLength();
         return 0;
-    }
-    public String[][] readCode() throws cdc.exceptions.ExitException {
-        String[][] result = new String[1][];
-        String help;
-
-        Vector<String> text = new Vector<String>();
-        try {
-            BufferedReader in = new BufferedReader(new StringReader(code));
-            while ((help = in.readLine()) != null) {
-                help = help.replaceAll("&", "&amp;");
-                help = help.replaceAll("<", "&lt;");
-                help = help.replaceAll(">", "&gt;");
-                help = help.replaceAll("\"", "&quot;");
-                text.addElement(help);
-            }
-            in.close();
-        } catch (IOException e) {
-            throw new cdc.exceptions.ExitException("I/O exception!");
-        }
-        result[0] = new String[text.size()];
-        text.copyInto(result[0]);
-        return result;
-    }
-    public void readFilesChar(String[] files) throws cdc.exceptions.ExitException {
-
     }
 
     public int compareTo(Submission other) {

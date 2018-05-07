@@ -2,14 +2,9 @@ package cdc;
 
 import cdc.exceptions.ExitException;
 import cdc.option.Options;
-import javafx.scene.input.DataFormat;
-import javafx.util.Pair;
-
+import org.bson.Document;
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Vector;
+import java.util.*;
 
 public class Program implements ProgramI {
     private Vector<Submission> submissions;
@@ -56,8 +51,8 @@ public class Program implements ProgramI {
     }
 
     private void creatSubmission() throws cdc.exceptions.ExitException {
+        submissions = new Vector<Submission>();
         if (this.options.isReadCodeFromFile()) {
-            submissions = new Vector<Submission>();
             File f = new File(options.root_dir);
             if (f == null || !f.isDirectory()) {
                 throw new cdc.exceptions.ExitException("Dircector \"" + options.root_dir + "\" not found!");
@@ -133,13 +128,13 @@ public class Program implements ProgramI {
             boolean parseOk = true;
             boolean removed = false;
             Submission subm = iter.next();
-            print("----Parsing submission:" + subm.name + "...");
+            print("|----Parsing submission:" + subm.name + "...");
             options.setProgress(count * 100 / totalcount);
             if (!(parseOk = subm.parse()))
                 parseErrorsNum++;
             count++;
             if (subm.struct != null && subm.tokenLength() < options.min_token_match) {
-                print("          Submission contains fewer tokens than minimum match " + get_min_token_match() + "\n");
+                print("          |----Submission contains fewer tokens than minimum match " + get_min_token_match() + "\n");
                 subm.struct = null;
                 invalid++;
                 removed = true;
@@ -147,7 +142,7 @@ public class Program implements ProgramI {
             if (parseOk && !removed)
                 print("OK\n");
             else
-                print("          ERROR -> Submission removed\n");
+                print("          |----ERROR -> Submission removed\n");
 
         }
 
@@ -168,19 +163,51 @@ public class Program implements ProgramI {
         dist[(((int) avgpercent) / 10) == 10 ? 9 : ((int) avgpercent) / 10]++;
         if (avgpercent > options.store_percent) {
             avgmatches.insert(pairSubmission);
-//            if(avgmatches.size()>Options.MAX_RESULT_PAIRS)
-//                avgmatches.removeElementAt(Options.MAX_RESULT_PAIRS);
         }
 //        if(options.clustering)
 //            options.sim
-
-
     }
 
     private void writeResultsToMongo(int[] dist, SortedVector<PairSubmission> pairSubmissions
     ) throws ExitException {
         options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
         options.setProgress(0);
+        if(pairSubmissions.size()<=0){
+            System.out.println("未检查到相似代码！ similar code not found!");
+            return;
+        }
+        Iterator<PairSubmission>iter=pairSubmissions.iterator();
+        List<Document> comparePairList=new ArrayList<Document>();
+        while(iter.hasNext()){
+            PairSubmission tmpPair=iter.next();
+            Document tmpDocument=new Document();
+            tmpDocument.append("cid",tmpPair.subA.getCid());
+
+            tmpDocument.append("runidA",tmpPair.subA.getRunid());
+            tmpDocument.append("codeNameA",tmpPair.subA.name);
+            tmpDocument.append("pidA",tmpPair.subA.getPid());
+            tmpDocument.append("runidB",tmpPair.subB.getRunid());
+            tmpDocument.append("codeNameB",tmpPair.subB.name);
+            tmpDocument.append("pidB",tmpPair.subB.getPid());
+
+            List<Document> matchesList=new ArrayList<Document>();
+            Match[] matches=tmpPair.matches;
+            for(int i=0;i<tmpPair.matchesNum();++i){
+                Document tmpDoc=new Document();
+                tmpDoc.append("startA",matches[i].startA);
+                tmpDoc.append("startB",matches[i].startB);
+                tmpDoc.append("length",matches[i].length);
+                matchesList.add(tmpDoc);
+            }
+            tmpDocument.append("matches",matchesList);
+
+            comparePairList.add(tmpDocument);
+        }
+        Document doc=new Document("cid",pairSubmissions.elementAt(0).subA.getCid());
+        doc.append("pid",pairSubmissions.elementAt(0).subA.getPid());
+        doc.append("comparisonPairs",comparePairList);
+        this.options.dbHelper.writeDocument(doc);
+
 
     }
 
@@ -201,8 +228,8 @@ public class Program implements ProgramI {
         try {
             if (!resultFile.exists())
                 resultFile.createNewFile();
-            FileOutputStream fos =new FileOutputStream(resultFile);
-            PrintWriter pw = new PrintWriter(fos);
+            FileWriter fw=new FileWriter(resultFile,true);
+            PrintWriter pw = new PrintWriter(fw);
             Iterator<PairSubmission> iter=pairSubmissions.iterator();
             while(iter.hasNext()){
                 PairSubmission pairTemp=iter.next();
@@ -210,7 +237,7 @@ public class Program implements ProgramI {
                 pw.write(line);
             }
             pw.close();
-            fos.close();
+            fw.close();
         }catch(IOException e){
             e.printStackTrace();
         }

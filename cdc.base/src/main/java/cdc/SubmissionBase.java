@@ -13,4 +13,10 @@ public class SubmissionBase {
         this.name=name;
         this.code=code;
     }
+    public final String toString(){
+        return ""+cid
+                +" "+pid
+                +" "+runid
+                +" "+name;
+    }
 }

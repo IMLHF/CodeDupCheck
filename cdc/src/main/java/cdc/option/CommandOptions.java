@@ -63,6 +63,9 @@ public class CommandOptions extends Options {
             min_token_match_setting = true;
         }else if(arg.equals("--quiet")){
             msg_quiet=true;
+        }else if(arg.equals("-cid") && i+1<args.length){
+            cid=Integer.parseInt(args[i+1]);
+            i++;
         }
         return i;
     }
@@ -118,12 +121,12 @@ public class CommandOptions extends Options {
             for (i = 0; i < Options.dbs.length - 1; i += 2) {
                 if (this.dbName.equals(Options.dbs[i])) {
                     try {
-                        Constructor<?> con = Class.forName(this.dbName).getDeclaredConstructor();
-                        this.dbHelper = (DBHelper) con.newInstance(this);
+                        Constructor<?>[] languageConstructors = Class.forName(dbs[i+1]).getDeclaredConstructors();
+                        Constructor<?> cons = languageConstructors[0];
+                        Object[] ob = {program};
+                        this.dbHelper = (DBHelper) cons.newInstance(ob);
                         this.dbHelper.prepareData();
                     } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    } catch (NoSuchMethodException e) {
                         e.printStackTrace();
                     } catch (Exception e) {
                         e.printStackTrace();

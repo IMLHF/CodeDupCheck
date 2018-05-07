@@ -103,7 +103,7 @@ abstract public class Options {
 
     public Language language=null;
     public boolean languageIsFound=false;
-    public String languageName="initial null";
+    public String languageName="cpp14";
     abstract public void iniLanguage(Program program)throws ExitException;
 
 
@@ -113,7 +113,7 @@ abstract public class Options {
     public static String[] dbs={
             "mongo","cdc.personalTool.MongoDBHelper"
     };
-    public String dbName="initial null";
+    public String dbName="mongo";
     public DBHelper dbHelper=null;
     abstract public void iniDBHelper(Program program)throws ExitException;
 

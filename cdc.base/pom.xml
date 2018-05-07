@@ -11,6 +11,11 @@
 
     <artifactId>cdc.base</artifactId>
     <dependencies>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>3.7.0-rc0</version>
+        </dependency>
     </dependencies>
 
 
