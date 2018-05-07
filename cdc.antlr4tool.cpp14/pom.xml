@@ -12,10 +12,12 @@
     <artifactId>cdc.antlr4tool.cpp14</artifactId>
     <dependencies>
         <dependency>
-            <groupId>antlr</groupId>
-            <artifactId>antlr</artifactId>
-            <version>2.7.7</version>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.7</version>
+            <type>jar</type>
         </dependency>
+
         <dependency>
             <groupId>CodeDupCheck</groupId>
             <artifactId>cdc.base</artifactId>

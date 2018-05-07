@@ -4,9 +4,12 @@ import cdc.Structure;
 import cdc.cpp14.grammar.CPP14Lexer;
 import cdc.cpp14.grammar.CPP14Parser;
 import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+
 
 import java.io.*;
 
@@ -29,13 +32,13 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
     }
 
     public boolean parseFile(String runidOrFileName, String code) {
-        StringBufferInputStream fis;
+        ByteArrayInputStream fis;
+        CharStream input;
         try {
-            fis = new StringBufferInputStream(code);
-            currentFile = runidOrFileName;
-            ANTLRInputStream input = new ANTLRInputStream(fis);
 
-            // create a lexer that feeds off of input CharStream
+            fis = new ByteArrayInputStream(code.getBytes("utf-8"));
+            input = CharStreams.fromStream(fis);
+            currentFile = runidOrFileName;
             CPP14Lexer lexer = new CPP14Lexer(input);
 
             // create a buffer of tokens pulled from the lexer
@@ -66,12 +69,12 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
         struct.addToken(new CPP14Token(type, (currentFile == null ? "null" : currentFile), tok.getLine(), tok.getCharPositionInLine() + 1,
                 tok.getText().length()));
         //TODO debug
-        System.out.println("cpp14 parser.java ling 164  :"+ CPP14Token.type2string(type)
-                +"\nline : "+tok.getLine()
-                +"\nCharPositionInLine : "+tok.getCharPositionInLine()
-                +"\nlength : "+tok.getText().length()
-                +"\ntoken text : "+tok.getText()+"\n\n"
-        );
+//        System.out.println("cpp14 parser.java ling 76  :"+ CPP14Token.type2string(type)
+//                +"\nline : "+tok.getLine()
+//                +"\nCharPositionInLine : "+tok.getCharPositionInLine()
+//                +"\nlength : "+tok.getText().length()
+//                +"\ntoken text : "+tok.getText()+"\n\n"
+//        );
     }
 
     public void addEnd(int type, org.antlr.v4.runtime.Token tok) {

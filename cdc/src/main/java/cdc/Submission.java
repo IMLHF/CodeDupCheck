@@ -10,6 +10,8 @@ public class Submission implements Comparable<Submission>{
     private Language language;
     public boolean error=false;
 
+    private int cid;
+    private int pid;
     private int runid;//from DB
 
     private String file;//from file
@@ -20,7 +22,9 @@ public class Submission implements Comparable<Submission>{
 
     public Structure struct;
 
-    public Submission(int runid, String name, String code, Program p, Language language){
+    public Submission(int cid,int pid,int runid, String name, String code, Program p, Language language){
+        this.cid=cid;
+        this.pid=pid;
         this.runid=runid;
         this.name=name;
         this.code=code;

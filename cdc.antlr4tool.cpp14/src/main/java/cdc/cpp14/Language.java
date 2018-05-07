@@ -3,7 +3,6 @@ package cdc.cpp14;
 import cdc.Structure;
 import cdc.ProgramI;
 
-import java.io.File;
 
 public class Language implements cdc.Language {
 

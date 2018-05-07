@@ -46,19 +46,20 @@ public class MongoDBHeler implements DBHelper {
         }
     }
 
-    public Vector<SubmissionBase> getSubmissionList() {
+    public Vector<SubmissionBase> getSubmissionListAndRemove() {
         Document problemDoc = (Document) problemList.get(0);
         problemList.remove(0);
         Vector<Document> mongoSubmitList = (Vector<Document>) problemDoc.get("all_submit_record");
         Vector<SubmissionBase> submissions=new Vector<SubmissionBase>();
         for (int i = 0; i < mongoSubmitList.size(); i++) {
+            int cid = Integer.parseInt(mongoSubmitList.elementAt(i).get("cid").toString());
+            int pid = Integer.parseInt(mongoSubmitList.elementAt(i).get("pid").toString());
             int runid=Integer.parseInt(mongoSubmitList.elementAt(i).get("runid").toString());
             String name = mongoSubmitList.get(i).get("username").toString()+"_Runid_"
                     +String.valueOf(runid);
             String code=mongoSubmitList.elementAt(i).get ("code").toString();
-            submissions.addElement(new SubmissionBase(runid,name,code));
-
+            submissions.addElement(new SubmissionBase(cid,pid,runid,name,code));
         }
-        return null;
+        return submissions;
     }
 }

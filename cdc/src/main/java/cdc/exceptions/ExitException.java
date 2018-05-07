@@ -29,5 +29,5 @@ public class ExitException extends Exception {
     }
 
     public int getState() { return this.state; }
-    public String getReport() { return this.report; }
+    public String getReport() { return this.report+" ---- error code "+getState(); }
 }

@@ -89,6 +89,12 @@ public class TokenMatchingGST implements TokenConstants {
         int tokenlengthB = structB.tokenLength();
         PairSubmission pairSubmission = new PairSubmission(subA, subB);
 
+        for (int i = 0; i < tokenlengthA; i++)
+            strA[i].marked = strA[i].type == FILE_END || strA[i].type == SEPARATOR_TOKEN;
+
+        for (int i = 0; i < tokenlengthB; i++)
+            strB[i].marked = strB[i].type == FILE_END || strB[i].type == SEPARATOR_TOKEN;
+
         if (tokenlengthA < MML || tokenlengthB < MML)
             return pairSubmission;
 
@@ -135,7 +141,7 @@ public class TokenMatchingGST implements TokenConstants {
                     }
                 }
             }
-            for( int i=matches.matchesNum()-1;i>=0;++i){
+            for( int i=matches.matchesNum()-1;i>=0;--i){
                 int x=matches.matches[i].startA;
                 int y=matches.matches[i].startB;
                 int len=matches.matches[i].length;
