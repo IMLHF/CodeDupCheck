@@ -13,7 +13,7 @@ public class Match implements Comparable<Match>{
 
     public Match(){}
 
-    public void set(int StartA,int startB,int length){
+    public void set(int startA,int startB,int length){
         this.startA=startA;
         this.startB=startB;
         this.length=length;

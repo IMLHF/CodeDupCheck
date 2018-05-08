@@ -38,8 +38,9 @@ abstract public class Options {
     public String result_dir = "result";
 
     public String[] suffixes;
+    public String[] languageTypes;
 
-    public int store_percent=60; //默认保存相似度30%以上的配对
+    public int store_percent=60; //默认保存相似度60%以上的配对
 
     //public static final int MAX_RESULT_PAIRS=1000;
 
@@ -124,9 +125,8 @@ abstract public class Options {
     public static int DIFO=1; //从数据库读入 输出到文件
     public static int DIDO=2; //从数据库读入 输出到数据库
     public int IOMETHOD=FIFO;
-    public int getIOMETHOD(){
-        return IOMETHOD;
-    }
+
+    public boolean ifOnePersonOneCode=false;
 
 
 }

@@ -21,6 +21,12 @@ public class Language implements cdc.Language {
     }
 
     @Override
+    public String[] languageType() {
+        String[] res = {"c++","gcc","g++","C++","GCC","G++"};
+        return res;
+    }
+
+    @Override
     public int errorsCount() {
         return this.parser.errorsCount();
     }

@@ -79,7 +79,7 @@ public class TokenMatchingGST implements TokenConstants {
     }
 
     //MML :最长子串的最小匹配
-    private final PairSubmission compare(Submission subA, Submission subB, int MML) {
+    private PairSubmission compare(Submission subA, Submission subB, int MML) {
         Structure structA = subA.struct;
         Structure structB = subB.struct;
 
@@ -151,7 +151,7 @@ public class TokenMatchingGST implements TokenConstants {
                 }
             }
         }while(maxmatch!=MML);
-
+        //System.out.println("++++++++++++++++++num  "+pairSubmission.matchesNum());
         return pairSubmission;
     }
 }

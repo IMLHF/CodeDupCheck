@@ -3,7 +3,6 @@ package cdc.cpp14;
 import cdc.Structure;
 import cdc.cpp14.grammar.CPP14Lexer;
 import cdc.cpp14.grammar.CPP14Parser;
-import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -55,7 +54,7 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
             }
 
         } catch (IOException e) {
-            program.print("      antlr4:Parsing Error in '" + runidOrFileName + "':\n" + e.getMessage() + "\n");
+            program.print("      |---- antlr4:Parsing Error in '" + runidOrFileName + "':\n" + e.getMessage() + "\n");
             return false;
         }catch (Exception e){
             e.printStackTrace();

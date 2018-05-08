@@ -66,7 +66,8 @@ public class CommandOptions extends Options {
         }else if(arg.equals("-cid") && i+1<args.length){
             cid=Integer.parseInt(args[i+1]);
             i++;
-        }
+        }else if(arg.equals("--opoc"))
+            ifOnePersonOneCode=true;
         return i;
     }
 
@@ -99,6 +100,7 @@ public class CommandOptions extends Options {
                     System.out.println("Language received ----------------  " + language.name());
                     this.min_token_match = this.language.min_token_match();
                     this.suffixes = language.suffixes();
+                    this.languageTypes=language.languageType();
                 } catch (ClassNotFoundException e) {
                     System.out.println(e.getMessage() + "  Language initial error");
                 } catch (InstantiationException e) {

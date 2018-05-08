@@ -4,6 +4,7 @@ import java.io.File;
 
 public interface Language {
     public String[] suffixes();//该语言源文件后缀名
+    public String[] languageType();//从数据库读入时，过滤语言类型
 
     public String name();//语言分析插件名称
     public String getShortName();

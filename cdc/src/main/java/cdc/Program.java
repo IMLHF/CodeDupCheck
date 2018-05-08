@@ -100,13 +100,42 @@ public class Program implements ProgramI {
             //from DB
             Vector<SubmissionBase> base = options.dbHelper.getSubmissionListAndRemove();
             Iterator<SubmissionBase> iter = base.iterator();
+            Set<String>nameSet=new HashSet<String>();
             while (iter.hasNext()) {
                 SubmissionBase tempBase = iter.next();
-                submissions.addElement(
-                        new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.name, tempBase.code,
-                                this, this.options.language)
-                );
+
+                //过滤代码语言
+                String lanType=tempBase.languageType;
+                boolean languageTypeOk = false;
+                for (int j = 0; j < options.languageTypes.length; ++j) {
+                    if (lanType.endsWith(options.languageTypes[j])) {
+                        languageTypeOk = true;
+                        break;
+                    }
+                }
+                if (!languageTypeOk)
+                    continue;
+
+                //过滤ac的结果
+                String subResult=tempBase.result;
+                if(subResult.equals("Accepted") || subResult.equals("accepted") ||subResult.equals("accept")){
+                    if(options.ifOnePersonOneCode){//一人只留一份ac的代码
+                        if(nameSet.add(tempBase.name)) {
+                            submissions.addElement(
+                                    new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.name, tempBase.code,
+                                            this, this.options.language)
+                            );
+                        }
+                    }else{
+                        submissions.addElement(
+                                new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.name, tempBase.code,
+                                        this, this.options.language)
+                        );
+                    }
+                }
+
             }
+            nameSet=null;
         }
     }
 
@@ -128,7 +157,7 @@ public class Program implements ProgramI {
             boolean parseOk = true;
             boolean removed = false;
             Submission subm = iter.next();
-            print("|----Parsing submission:" + subm.name + "...");
+            print("|----Parsing submission:" + subm.name + "...\n");
             options.setProgress(count * 100 / totalcount);
             if (!(parseOk = subm.parse()))
                 parseErrorsNum++;
@@ -140,7 +169,7 @@ public class Program implements ProgramI {
                 removed = true;
             }
             if (parseOk && !removed)
-                print("OK\n");
+                print("                                    |----OK\n");
             else
                 print("          |----ERROR -> Submission removed\n");
 
@@ -192,6 +221,7 @@ public class Program implements ProgramI {
 
             List<Document> matchesList=new ArrayList<Document>();
             Match[] matches=tmpPair.matches;
+            //System.out.println("_____________num    "+tmpPair.matchesNum());
             for(int i=0;i<tmpPair.matchesNum();++i){
                 Document tmpDoc=new Document();
                 tmpDoc.append("startA",matches[i].startA);
@@ -200,6 +230,7 @@ public class Program implements ProgramI {
                 matchesList.add(tmpDoc);
             }
             tmpDocument.append("matches",matchesList);
+            tmpDocument.append("matchesPercent",tmpPair.percent());
 
             comparePairList.add(tmpDocument);
         }
@@ -280,7 +311,7 @@ public class Program implements ProgramI {
 
                 comOK++;
 
-                print("----Compared " + s1.name + "-" + s2.name + " match percent: " + pairSubmission.percent()+"\n");
+                print("|----Compared " + s1.name + "-" + s2.name + " match percent: " + pairSubmission.percent()+"\n");
 
                 registerMatch(pairSubmission, dist, avgmatches);
                 options.setProgress(countAll * 100 / totalcomps);
@@ -291,7 +322,7 @@ public class Program implements ProgramI {
         long time = System.currentTimeMillis() - msec;
         print("Total time for comparing submissions: " + ((time / 3600000 > 0) ? (time / 3600000) + " h " : "")
                 + ((time / 60000 > 0) ? ((time / 60000) % 60000) + " min " : "") + (time / 1000 % 60) + " sec\n" + "Time per comparison: "
-                + (time / comOK) + " msec\n");
+                + (comOK==0?0 : (time / comOK)) + " msec\n");
 
         //Cluster cluster = null;
         //if (options.clusterin g)
@@ -305,7 +336,6 @@ public class Program implements ProgramI {
     }
 
     private void run() throws ExitException {
-        print("Language: " + options.language.name() + "\n\n");
         creatSubmission();
         parseAll();
         System.gc();
@@ -321,13 +351,22 @@ public class Program implements ProgramI {
     }
 
     public void runcodeChecker() throws cdc.exceptions.ExitException {
+        print("Language: " + options.language.name() + "\n\n");
         if (this.options.isReadCodeFromFile()) {//对文件夹中的代码查重
             run();
             System.gc();
         }
         else {//对比赛查重
+            this.options.dbHelper.removeCDCANS(this.options.cid);
             while (this.options.dbHelper.isHaveProblemNotCheck()) {
-                run();
+                try {
+                    run();
+                }catch (ExitException e){
+                    if(e.getState()==ExitException.NOT_ENOUGH_SUBMISSIONS_ERROR){
+                        System.out.println(e.getReport());
+                    }else
+                        throw e;
+                }
                 System.gc();
             }
         }
