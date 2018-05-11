@@ -1,5 +1,6 @@
 package cdc.cpp14;
 
+import cdc.DBHelper;
 import cdc.Structure;
 import cdc.cpp14.grammar.CPP14Lexer;
 import cdc.cpp14.grammar.CPP14Parser;
@@ -19,10 +20,10 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
     private String currentFile;
 
 
-    public cdc.Structure parse(String runidOrFileName, String code) {
+    public cdc.Structure parse(String runidOrFileName) {
         struct = new Structure();
         errors = 0;
-        if (!parseFile(runidOrFileName, code)) {
+        if (!parseFile(runidOrFileName)) {
             errors++;
         }
         System.gc();
@@ -30,12 +31,32 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
         return struct;
     }
 
-    public boolean parseFile(String runidOrFileName, String code) {
+    public boolean parseFile(String runidOrFileName) {
         ByteArrayInputStream fis;
         CharStream input;
         try {
+            String codeString = null;
+            if(program.isReadCodeFromFile()){
+                File codefile=new File(runidOrFileName);
+                try {
+                    FileInputStream in = new FileInputStream(codefile);
+                    Long filelength = codefile.length();
+                    byte[] filecontent = new byte[filelength.intValue()];
+                    in.read(filecontent);
+                    in.close();
+                    codeString = new String(filecontent, "utf-8");
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
-            fis = new ByteArrayInputStream(code.getBytes("utf-8"));
+            }else{
+                DBHelper dbHelper= this.program.getDBhelperInstance();
+                codeString = dbHelper.getCodeByRunid(Integer.parseInt(runidOrFileName));
+            }
+
+            fis = new ByteArrayInputStream(codeString.getBytes("utf-8"));
             input = CharStreams.fromStream(fis);
             currentFile = runidOrFileName;
             CPP14Lexer lexer = new CPP14Lexer(input);

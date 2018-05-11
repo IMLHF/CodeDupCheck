@@ -11,7 +11,7 @@ public interface Language {
 
     public int min_token_match();//最小配对Token
 
-    public Structure parse(String runidOrFileName ,String code);
+    public Structure parse(String runidOrFileName);
 
     public boolean errors();
     public int errorsCount();

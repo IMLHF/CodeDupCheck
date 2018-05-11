@@ -47,8 +47,8 @@ public class Language implements cdc.Language {
     }
 
     @Override
-    public Structure parse(String runidOrFileName, String code) {
-        return this.parser.parse(runidOrFileName, code);
+    public Structure parse(String runidOrFileName) {
+        return this.parser.parse(runidOrFileName);
     }
 
     @Override

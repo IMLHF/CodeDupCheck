@@ -6,6 +6,7 @@ import cdc.SubmissionBase;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
@@ -22,15 +23,28 @@ import java.util.logging.Logger;
 public class MongoDBHelper implements DBHelper {
     private ProgramI program;
     private List problemList;
+    private static String DBNAME="testlhf";
+    private static String HOST="localhost";
+    private static int PORT=27017;
     public MongoDBHelper(ProgramI p){
         program=p;
         Logger log = Logger.getLogger("org.mongodb.driver");
         log.setLevel(Level.OFF);
     }
 
+    public String getCodeByRunid(int runid) {
+        MongoClient mongoClient = new MongoClient(HOST, PORT);
+        MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
+        MongoCollection<Document> dbCollection_SSGSTANS = mongoDB.getCollection("SDUTOJ_STATUS");
+        BasicDBObject filterRunid=new BasicDBObject("runid",runid);
+        String code =dbCollection_SSGSTANS.find(filterRunid).first().get("code").toString();
+        mongoClient.close();
+        return code;
+    }
+
     public void removeCDCANS(int cid) {
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
-        MongoDatabase mongoDB = (mongoClient).getDatabase("testlhf");
+        MongoClient mongoClient = new MongoClient(HOST, PORT);
+        MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
         MongoCollection<Document> dbCollection_SSGSTANS = mongoDB.getCollection("SDUTOJ_CDC_ANS");
         BasicDBObject filterCid=new BasicDBObject("cid",cid);
         dbCollection_SSGSTANS.deleteOne(filterCid);
@@ -42,8 +56,8 @@ public class MongoDBHelper implements DBHelper {
     }
     public void prepareData() {
         try {
-            MongoClient mongoClient = new MongoClient("localhost", 27017);
-            MongoDatabase mongoDB = (mongoClient).getDatabase("testlhf");
+            MongoClient mongoClient = new MongoClient(HOST, PORT);
+            MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
 
             MongoCollection<Document> dbCollection_SDUTOJ = mongoDB.getCollection("SDUTOJ");
             Document contestDoc;
@@ -72,10 +86,11 @@ public class MongoDBHelper implements DBHelper {
                 int pid = Integer.parseInt(tmp.get("pid").toString());
                 int runid=Integer.parseInt(tmp.get("runid").toString());
                 String name = tmp.get("username").toString();
-                String code=tmp.get ("code").toString();
+                //String code=tmp.get ("code").toString();
+                //code不再存在contest的信息文档中
                 String result=tmp.get("result").toString();
                 String languageType=tmp.get("language").toString();
-                submissions.addElement(new SubmissionBase(cid,pid,runid,name,code,result,languageType));
+                submissions.addElement(new SubmissionBase(cid,pid,runid,name,result,languageType));
             }
             return submissions;
         }
@@ -89,8 +104,8 @@ public class MongoDBHelper implements DBHelper {
     public void writeDocument(Document doc) {
         int cid= Integer.parseInt(doc.get("cid").toString());
         try{
-            MongoClient mongoClient = new MongoClient("localhost", 27017);
-            MongoDatabase mongoDB = (mongoClient).getDatabase("testlhf");
+            MongoClient mongoClient = new MongoClient(HOST, PORT);
+            MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
             MongoCollection<Document> dbCollection_SSGSTANS = mongoDB.getCollection("SDUTOJ_CDC_ANS");
 
             /**

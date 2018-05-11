@@ -20,6 +20,11 @@ public interface DBHelper {
     public void writeDocument(Document doc);
 
     /**
+     * 根据runid获取代码
+     */
+    public String getCodeByRunid(int runid);
+
+    /**
      * 从数据库读入时，判断是否还有题目未进行查重
      * @return
      */

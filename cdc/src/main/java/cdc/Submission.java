@@ -20,33 +20,30 @@ public class Submission implements Comparable<Submission>{
     private String file;//from file
 
     public String name;
-    private String code;
-
+    public String code;
 
     public Structure struct;
 
-    public Submission(int cid,int pid,int runid, String name, String code, Program p, Language language){
+    public Submission(int cid,int pid,int runid, String name, Program p, Language language){
         this.cid=cid;
         this.pid=pid;
         this.runid=runid;
         this.name=name;
-        this.code=code;
         this.program=p;
         this.language=language;
     }
 
-    public Submission(String file, String name, String code, Program p, Language language){
+    public Submission(String file, String name, Program p, Language language){
         this.file=file;
         this.name=name;
-        this.code=code;
         this.program=p;
         this.language=language;
     }
     public boolean parse()throws cdc.exceptions.ExitException{
         if(this.program.options.isReadCodeFromFile())
-            struct=this.language.parse(file,code);
+            struct=this.language.parse(file);
         else
-            struct=this.language.parse(String.valueOf(runid),code);
+            struct=this.language.parse(String.valueOf(runid));
         if(!language.errors())
             return true;
         struct=null;

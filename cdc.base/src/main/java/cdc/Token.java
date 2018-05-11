@@ -8,7 +8,6 @@ abstract public class Token implements TokenConstants,Serializable {
     public String codeFileOrCodeName;
 
     protected boolean marked; //GST算法使用的标记位
-    protected boolean basecode = false;
     protected int hash = -1;
 
     public Token(int type,String codeFileOrCodeName,int line,int column,int length){

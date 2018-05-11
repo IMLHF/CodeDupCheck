@@ -3,8 +3,8 @@ package cdc.cpp14;
 public class CPP14Token extends cdc.Token implements CPP14TokenConstants{
     private int line, column, length;
 
-    public CPP14Token(int type, String file, int line, int column, int length) {
-        super(type, file, line, column, length);
+    public CPP14Token(int type, String fileOrName, int line, int column, int length) {
+        super(type, fileOrName, line, column, length);
     }
 
     @Override

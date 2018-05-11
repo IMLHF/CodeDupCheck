@@ -23,6 +23,13 @@ public class Program implements ProgramI {
         options.iniDBHelper(this);
     }
 
+    public DBHelper getDBhelperInstance() {
+        return options.dbHelper;
+    }
+
+    public boolean isReadCodeFromFile() {
+        return options.isReadCodeFromFile();
+    }
 
     public int getCid() {
         return options.cid;
@@ -79,21 +86,9 @@ public class Program implements ProgramI {
                 }
                 if (!suffixesOk)
                     continue;
-                String codeString = null;
-                try {
-                    FileInputStream in = new FileInputStream(codefile);
-                    Long filelength = codefile.length();
-                    byte[] filecontent = new byte[filelength.intValue()];
-                    in.read(filecontent);
-                    in.close();
-                    codeString = new String(filecontent, "utf-8");
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+
                 submissions.addElement(
-                        new Submission(name, name, (codeString != null) ? codeString : "null",
+                        new Submission(codefile.toString(), name,
                                 this, this.options.language));
             }
         } else {
@@ -122,13 +117,13 @@ public class Program implements ProgramI {
                     if(options.ifOnePersonOneCode){//一人只留一份ac的代码
                         if(nameSet.add(tempBase.name)) {
                             submissions.addElement(
-                                    new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.name, tempBase.code,
+                                    new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.name,
                                             this, this.options.language)
                             );
                         }
                     }else{
                         submissions.addElement(
-                                new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.name, tempBase.code,
+                                new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.name,
                                         this, this.options.language)
                         );
                     }

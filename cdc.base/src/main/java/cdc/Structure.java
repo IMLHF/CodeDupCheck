@@ -1,7 +1,7 @@
 package cdc;
 
 public class Structure implements TokenConstants {
-    public Token[] tokens = new Token[0];
+    public Token[] tokens;
     Table table = null;
     int hash_length = -1;
 
