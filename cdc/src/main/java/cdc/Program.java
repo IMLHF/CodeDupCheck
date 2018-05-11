@@ -112,8 +112,8 @@ public class Program implements ProgramI {
                     continue;
 
                 //过滤ac的结果
-                String subResult=tempBase.result;
-                if(subResult.equals("Accepted") || subResult.equals("accepted") ||subResult.equals("accept")){
+                int subResult=tempBase.result;
+                if(subResult==SubmissionBase.ACCEPTED){
                     if(options.ifOnePersonOneCode){//一人只留一份ac的代码
                         if(nameSet.add(tempBase.name)) {
                             submissions.addElement(

@@ -59,10 +59,10 @@ public class MongoDBHelper implements DBHelper {
             MongoClient mongoClient = new MongoClient(HOST, PORT);
             MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
 
-            MongoCollection<Document> dbCollection_SDUTOJ = mongoDB.getCollection("SDUTOJ");
+            MongoCollection<Document> dbCollection_SDUTOJ = mongoDB.getCollection("SDUTOJ_CONTEST");
             Document contestDoc;
             contestDoc = dbCollection_SDUTOJ.find(
-                    Filters.eq("contest_id", String.valueOf(this.program.getCid()))).first();
+                    Filters.eq("cid", String.valueOf(this.program.getCid()))).first();
 
             //System.out.println("contest_id: " + contest_doc.get("problem"));
             problemList = ( List<Document>) contestDoc.get("problem");
@@ -76,8 +76,8 @@ public class MongoDBHelper implements DBHelper {
     public Vector<SubmissionBase> getSubmissionListAndRemove() {
         Document problemDoc = (Document) problemList.get(0);
         problemList.remove(0);
-        if(problemDoc.containsKey("all_submit_record")){
-            ArrayList<Document> mongoSubmitList = (ArrayList<Document>) problemDoc.get("all_submit_record");
+        if(problemDoc.containsKey("all_submit")){
+            ArrayList<Document> mongoSubmitList = (ArrayList<Document>) problemDoc.get("all_submit");
             Iterator<Document>iter=mongoSubmitList.iterator();
             Vector<SubmissionBase> submissions=new Vector<SubmissionBase>();
             while(iter.hasNext()){
@@ -85,10 +85,10 @@ public class MongoDBHelper implements DBHelper {
                 int cid = Integer.parseInt(tmp.get("cid").toString());
                 int pid = Integer.parseInt(tmp.get("pid").toString());
                 int runid=Integer.parseInt(tmp.get("runid").toString());
-                String name = tmp.get("username").toString();
+                String name = tmp.get("user_name").toString();
                 //String code=tmp.get ("code").toString();
                 //code不再存在contest的信息文档中
-                String result=tmp.get("result").toString();
+                int result=Integer.parseInt(tmp.get("result").toString());
                 String languageType=tmp.get("language").toString();
                 submissions.addElement(new SubmissionBase(cid,pid,runid,name,result,languageType));
             }
