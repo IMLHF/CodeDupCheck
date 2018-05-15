@@ -31,7 +31,7 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
         return struct;
     }
 
-    public boolean parseFile(String runidOrFileName) {
+    private boolean parseFile(String runidOrFileName) {
         ByteArrayInputStream fis;
         CharStream input;
         try {
@@ -99,5 +99,9 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
 
     public void addEnd(int type, org.antlr.v4.runtime.Token tok) {
         struct.addToken(new CPP14Token(type, (currentFile == null ? "null" : currentFile), tok.getLine(), struct.tokens[struct.tokenLength() - 1].getColumn() + 1, 0));
+    }
+    public static void main(String[] args){
+//        Parser parser=new Parser();
+//        parser.parse(String.valueOf(2305636));
     }
 }

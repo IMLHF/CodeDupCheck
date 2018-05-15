@@ -20,7 +20,6 @@ public class Submission implements Comparable<Submission>{
     private String file;//from file
 
     public String name;
-    public String code;
 
     public Structure struct;
 
@@ -39,7 +38,7 @@ public class Submission implements Comparable<Submission>{
         this.program=p;
         this.language=language;
     }
-    public boolean parse()throws cdc.exceptions.ExitException{
+    public boolean parse(){
         if(this.program.options.isReadCodeFromFile())
             struct=this.language.parse(file);
         else

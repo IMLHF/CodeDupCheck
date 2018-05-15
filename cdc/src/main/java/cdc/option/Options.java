@@ -127,6 +127,8 @@ abstract public class Options {
     public int IOMETHOD=FIFO;
 
     public boolean ifOnePersonOneCode=false;
+    public boolean ifReCDC=false;//全新进行查重 仅DIDO生效
+    public boolean ifReParse=false;//重新Parse,仅DIDO生效
 
 
 }

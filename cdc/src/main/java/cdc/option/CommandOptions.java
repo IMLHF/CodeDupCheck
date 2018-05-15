@@ -68,6 +68,11 @@ public class CommandOptions extends Options {
             i++;
         }else if(arg.equals("--opoc"))
             ifOnePersonOneCode=true;
+        else if(arg.equals("--reCDC"))
+            ifReCDC=true;
+        else if(arg.equals("--reParse"))
+            ifReParse=true;
+
         return i;
     }
 

@@ -6,11 +6,12 @@ import java.util.Vector;
 
 public interface DBHelper {
 
+
     /**
-     * 根据比赛id，移除该比赛的查重结果（结果的写入使用增量方式，写入前先清理）
-     * @param cid 比赛id
+     * 将一个submission的代码的parse结果根据对应runid写入mongo
      */
-    public void removeCDCANS(int cid);
+    public void wirteParseAnsToMongo(int runid,Structure struc);
+
 
     /**
      * 将查重结果写入数据库

@@ -1,9 +1,7 @@
 package cdc;
 
-import java.io.Serializable;
 
-abstract public class Token implements TokenConstants,Serializable {
-    private static final long serialVersionUID = 17865922917L;
+abstract public class Token implements TokenConstants {
     public int type;
     public String codeFileOrCodeName;
 
@@ -40,7 +38,7 @@ abstract public class Token implements TokenConstants,Serializable {
         return type2string(type);
     }
     public static int numberOfTokens() {
-        return 1;
+        return -1;
     }
 
 

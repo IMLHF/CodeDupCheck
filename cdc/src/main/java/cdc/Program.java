@@ -23,19 +23,32 @@ public class Program implements ProgramI {
         options.iniDBHelper(this);
     }
 
+    @Override
+    public boolean isReCDC() {
+        return options.ifReCDC;
+    }
+
+    @Override
+    public boolean isReParse() {
+        return options.ifReParse;
+    }
+
+    @Override
     public DBHelper getDBhelperInstance() {
         return options.dbHelper;
     }
 
+    @Override
     public boolean isReadCodeFromFile() {
         return options.isReadCodeFromFile();
     }
 
+    @Override
     public int getCid() {
         return options.cid;
     }
 
-
+    @Override
     public void print(String msg) {
         if (options.msg_quiet)
             return;
@@ -149,7 +162,7 @@ public class Program implements ProgramI {
 
         int invalid = 0;
         while (iter.hasNext()) {
-            boolean parseOk = true;
+            boolean parseOk;
             boolean removed = false;
             Submission subm = iter.next();
             print("|----Parsing submission:" + subm.name + "...\n");
@@ -163,8 +176,11 @@ public class Program implements ProgramI {
                 invalid++;
                 removed = true;
             }
-            if (parseOk && !removed)
+            if (parseOk && !removed){
+                if(!this.options.isWriteResultToFile())
+                    this.options.dbHelper.wirteParseAnsToMongo(subm.getRunid(),subm.struct);
                 print("                                    |----OK\n");
+            }
             else
                 print("          |----ERROR -> Submission removed\n");
 
@@ -234,13 +250,18 @@ public class Program implements ProgramI {
         doc.append("comparisonPairs",comparePairList);
         this.options.dbHelper.writeDocument(doc);
 
-
     }
 
     private void writeResultToFile(int[] dist, SortedVector<PairSubmission> pairSubmissions
     ) throws ExitException {
         options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
         options.setProgress(0);
+        if(pairSubmissions.size()<=0){
+            System.out.println("未检查到相似代码！ similar code not found!");
+            return;
+        }
+        int cid=pairSubmissions.elementAt(0).subA.getCid();
+        int pid=pairSubmissions.elementAt(0).subA.getPid();
         File f = new File(options.result_dir);
         if (!f.exists())
             if (!f.mkdirs())
@@ -250,18 +271,22 @@ public class Program implements ProgramI {
         if (!f.canWrite())
             throw new ExitException("Cannot write directory " + options.result_dir);
 
-        File resultFile = new File(f, "result.text");
+        File resultFile = new File(f, "result_PID_"+pid+"_CID_"+cid+".text");
         try {
             if (!resultFile.exists())
                 resultFile.createNewFile();
-            FileWriter fw=new FileWriter(resultFile,true);
+            FileWriter fw;
+            fw=new FileWriter(resultFile);
+            //fw=new FileWriter(resultFile,true);
             PrintWriter pw = new PrintWriter(fw);
+            String result="cid : "+cid+",  pid: "+pid+"  -----------------------------------\n\n\n\n\n";
             Iterator<PairSubmission> iter=pairSubmissions.iterator();
             while(iter.hasNext()){
                 PairSubmission pairTemp=iter.next();
-                String line=pairTemp.subA.name+" , "+pairTemp.subB.name+"  similaration : "+pairTemp.percent()+"\n";
-                pw.write(line);
+                result+= pairTemp.subA.name + " , " + pairTemp.subB.name + "  similaration : " + pairTemp.percent() + "\n";
+                //pw.write(line);
             }
+            pw.write(result);
             pw.close();
             fw.close();
         }catch(IOException e){
@@ -278,7 +303,6 @@ public class Program implements ProgramI {
         int dist[] = new int[10];
 
         avgmatches = new SortedVector<PairSubmission>(new PairSubmission.AvgComparator());
-        maxmatches = new SortedVector<PairSubmission>(new PairSubmission.MaxComparator());
 
         long msec = System.currentTimeMillis();//开始时间
         Submission s1, s2;
@@ -352,7 +376,6 @@ public class Program implements ProgramI {
             System.gc();
         }
         else {//对比赛查重
-            this.options.dbHelper.removeCDCANS(this.options.cid);
             while (this.options.dbHelper.isHaveProblemNotCheck()) {
                 try {
                     run();
