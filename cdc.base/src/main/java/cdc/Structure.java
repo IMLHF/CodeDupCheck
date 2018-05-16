@@ -32,11 +32,13 @@ public class Structure implements TokenConstants {
 
     public final void addToken(Token token) {
         ensureCapacity(tokenNum + 1);
-        if (tokenNum > 0 && tokens[tokenNum - 1].codeFileOrCodeName.equals(token.codeFileOrCodeName))
-            token.codeFileOrCodeName = tokens[tokenNum - 1].codeFileOrCodeName; //节省内存
+        if (tokenNum > 0 && tokens[tokenNum - 1].runidOrFileName.equals(token.runidOrFileName))
+            token.runidOrFileName = tokens[tokenNum - 1].runidOrFileName; //节省内存
         if ((tokenNum > 0) && (token.getLine() < tokens[tokenNum - 1].getLine()) &&
-                (token.codeFileOrCodeName.equals(tokens[tokenNum - 1].codeFileOrCodeName)))
+                (token.runidOrFileName.equals(tokens[tokenNum - 1].runidOrFileName)))
             token.setLine(tokens[tokenNum - 1].getLine());
+
+
         tokens[tokenNum++] = token;
         if (token.type == FILE_END)
             fileEndToken_num++;

@@ -1,10 +1,20 @@
 package cdc;
 
+import com.mongodb.BasicDBObject;
 import org.bson.Document;
 
+import java.util.ArrayList;
 import java.util.Vector;
 
 public interface DBHelper {
+
+
+    /**
+     * 通过runid获取代码parse结果的tokens列表
+     * @param runid
+     * @return
+     */
+    public ArrayList<Document> getTokensByRunid(int runid);
 
 
     /**
@@ -18,12 +28,12 @@ public interface DBHelper {
      * @param doc {cid:?, pid:?, comparisonPairs:? }
      *
      */
-    public void writeDocument(Document doc);
+    public void writeDocument(Document doc) throws cdc.exceptions.ExitException;
 
     /**
      * 根据runid获取代码
      */
-    public String getCodeByRunid(int runid);
+    public String getCodeByRunid(int runid) throws cdc.exceptions.ExitException;
 
     /**
      * 从数据库读入时，判断是否还有题目未进行查重
@@ -34,7 +44,7 @@ public interface DBHelper {
     /**
      * 避免重复查询，提前将整个比赛的数据读入内存
      */
-    public void prepareData();
+    public void prepareData() throws cdc.exceptions.ExitException;
 
     /**
      * //获取整个提交列表

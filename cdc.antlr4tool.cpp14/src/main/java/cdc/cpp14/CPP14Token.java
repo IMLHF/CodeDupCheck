@@ -8,6 +8,16 @@ public class CPP14Token extends cdc.Token implements CPP14TokenConstants{
     }
 
     @Override
+    public String getRunidOrFileName() {
+        return this.runidOrFileName;
+    }
+
+    @Override
+    public int getType() {
+        return this.type;
+    }
+
+    @Override
     public int getLine() {
         return line;
     }

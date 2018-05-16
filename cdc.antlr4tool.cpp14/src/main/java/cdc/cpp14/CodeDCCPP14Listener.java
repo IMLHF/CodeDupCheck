@@ -8,8 +8,8 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class CodeDCCPP14Listener implements CPP14Listener, CPP14TokenConstants {
     private cdc.cpp14.Parser  languageParser;
-    public CodeDCCPP14Listener(cdc.cpp14.Parser jplag) {
-        languageParser = jplag;
+    public CodeDCCPP14Listener(cdc.cpp14.Parser parser) {
+        languageParser = parser;
     }
 
     @Override

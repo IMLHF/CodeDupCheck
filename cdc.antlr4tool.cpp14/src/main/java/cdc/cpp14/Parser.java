@@ -4,14 +4,18 @@ import cdc.DBHelper;
 import cdc.Structure;
 import cdc.cpp14.grammar.CPP14Lexer;
 import cdc.cpp14.grammar.CPP14Parser;
+import com.mongodb.BasicDBObject;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.bson.Document;
 
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 public class Parser extends cdc.Parser implements CPP14TokenConstants {
 
@@ -19,15 +23,36 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
     private Structure struct = new Structure();
     private String currentFile;
 
+    private boolean isRunid(){
+        return !program.isReadCodeFromFile();
+    }
 
     public cdc.Structure parse(String runidOrFileName) {
         struct = new Structure();
-        errors = 0;
-        if (!parseFile(runidOrFileName)) {
-            errors++;
+        ArrayList<Document> tokens=null;
+        if(isRunid() && !program.isReParse()){
+            DBHelper dbHelper = program.getDBhelperInstance();
+            tokens = dbHelper.getTokensByRunid(Integer.parseInt(runidOrFileName));
         }
-        System.gc();
-        struct.addToken(new CPP14Token(FILE_END, runidOrFileName, -1, -1, -1));
+        if(!isRunid() || program.isReParse() || tokens==null){
+            errors = 0;
+            if (!parseFile(runidOrFileName)) {
+                errors++;
+            }
+            System.gc();
+            struct.addToken(new CPP14Token(FILE_END, runidOrFileName, -1, -1, -1));
+        }else {
+            Iterator<Document> iter=tokens.iterator();
+            while(iter.hasNext()){
+                Document tmpToken=iter.next();
+                int type=tmpToken.getInteger("type");
+                int line=tmpToken.getInteger("line");
+                int column=tmpToken.getInteger("column");
+                int length=tmpToken.getInteger("length");
+                struct.addToken(new CPP14Token(type, runidOrFileName, line, column, length));
+            }
+            System.gc();
+        }
         return struct;
     }
 
