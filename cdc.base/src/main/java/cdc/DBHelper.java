@@ -7,7 +7,33 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 public interface DBHelper {
+    public static final int STATE_SUBMITTING = 8;
+    public static final int STATE_PARSING = 68;
+    public static final int STATE_COMPARING = 88;
+    public static final int STATE_GENERATING_RESULT_TO_FILES = 100;
 
+    /**
+     * 删除mongo中的进度
+     */
+    public void delProgressInDB(int cid);
+    /**
+     * 将进度写入mongoDB
+     *
+     */
+    public void setProgressToDB(int cid,int pid,String labelAndName,int state_progress,int state,String task_id);
+    /**
+     * 获取当前题目的Label 和名称
+     */
+    public String getLabelAndName();
+    /**
+     * 为查重后的contest设置字段hasCDC
+     */
+    public void setHasCDC(int cid,boolean isCDC);
+
+    /**
+     * 获取当前提交的pid
+     */
+    public int getPid();
 
     /**
      * 通过runid获取代码parse结果的tokens列表

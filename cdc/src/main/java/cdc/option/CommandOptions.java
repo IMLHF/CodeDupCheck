@@ -72,6 +72,11 @@ public class CommandOptions extends Options {
             ifReCDC=true;
         else if(arg.equals("--reParse"))
             ifReParse=true;
+        else if(arg.equals("-taskid") && i+1<args.length) {
+            task_id = args[i + 1];
+            i++;
+        }
+
 
         return i;
     }
@@ -102,7 +107,7 @@ public class CommandOptions extends Options {
                     Constructor<?> cons = languageConstructors[0];
                     Object[] ob = {program};
                     this.language = (Language) cons.newInstance(ob);
-                    System.out.println("Language received ----------------  " + language.name());
+                    program.print("Language received ----------------  " + language.name()+"\n");
                     this.min_token_match = this.language.min_token_match();
                     this.suffixes = language.suffixes();
                     this.languageTypes=language.languageType();

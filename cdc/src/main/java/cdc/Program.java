@@ -24,6 +24,11 @@ public class Program implements ProgramI {
     }
 
     @Override
+    public boolean isQuiet() {
+        return options.msg_quiet;
+    }
+
+    @Override
     public boolean isReCDC() {
         return options.ifReCDC;
     }
@@ -70,7 +75,7 @@ public class Program implements ProgramI {
         return size;
     }
 
-    private void creatSubmission() throws cdc.exceptions.ExitException {
+    private void createSubmission() throws cdc.exceptions.ExitException {
         submissions = new Vector<Submission>();
         if (this.options.isReadCodeFromFile()) {
             File f = new File(options.root_dir);
@@ -107,9 +112,19 @@ public class Program implements ProgramI {
         } else {
             //from DB
             Vector<SubmissionBase> base = options.dbHelper.getSubmissionListAndRemove();
+            options.setPid(options.dbHelper.getPid());
+            options.setPidLabelAndName(options.dbHelper.getLabelAndName());
             Iterator<SubmissionBase> iter = base.iterator();
             Set<String>nameSet=new HashSet<String>();
+
+            int count=0;
+            int totalcount=base.size();
+            options.setState(Options.STATE_SUBMITTING);
+            options.setProgress(0);
+
             while (iter.hasNext()) {
+                count++;
+                options.setProgress(count * 100 / totalcount);
                 SubmissionBase tempBase = iter.next();
 
                 //过滤代码语言
@@ -143,6 +158,7 @@ public class Program implements ProgramI {
                 }
 
             }
+            options.setProgress(100);
             nameSet=null;
         }
     }
@@ -152,11 +168,11 @@ public class Program implements ProgramI {
             print("Nothing to parse! Program.java");
             return;
         }
-        int count = 0;
-        int totalcount = submissions.size();
         long msec = System.currentTimeMillis();
         Iterator<Submission> iter = submissions.iterator();
 
+        int count = 0;
+        int totalcount = submissions.size();
         options.setState(Options.STATE_PARSING);
         options.setProgress(0);
 
@@ -172,6 +188,7 @@ public class Program implements ProgramI {
             count++;
             if (subm.struct != null && subm.tokenLength() < options.min_token_match) {
                 print("          |----Submission contains fewer tokens than minimum match " + get_min_token_match() + "\n");
+                this.options.dbHelper.wirteParseAnsToMongo(subm.getRunid(),subm.struct);
                 subm.struct = null;
                 invalid++;
                 removed = true;
@@ -192,15 +209,15 @@ public class Program implements ProgramI {
                 + (parseErrorsNum != 1 ? "s!\n" : "!\n"));
         long time = System.currentTimeMillis() - msec;
         print("\nTotal time for parsing: " + ((time / 3600000 > 0) ? (time / 3600000) + " h " : "")
-                + ((time / 60000 > 0) ? ((time / 60000) % 60000) + " min " : "") + (time / 1000 % 60) + " sec\n"
+                + ((time / 60000 > 0) ? ((time / 60000) % 60) + " min " : "") + (time / 1000 % 60) + " sec\n"
                 + "Time per parsed submission: " + (count > 0 ? (time / count) : "n/a") + " msec\n\n");
 
     }
 
-    private void registerMatch(PairSubmission pairSubmission, int[] dist,
+    private void registerMatch(PairSubmission pairSubmission,
                                SortedVector<PairSubmission> avgmatches) {
         float avgpercent = pairSubmission.percent();
-        dist[(((int) avgpercent) / 10) == 10 ? 9 : ((int) avgpercent) / 10]++;
+//        dist[(((int) avgpercent) / 10) == 10 ? 9 : ((int) avgpercent) / 10]++;
         if (avgpercent > options.store_percent) {
             avgmatches.insert(pairSubmission);
         }
@@ -208,17 +225,31 @@ public class Program implements ProgramI {
 //            options.sim
     }
 
-    private void writeResultsToMongo(int[] dist, SortedVector<PairSubmission> pairSubmissions
+    private void writeResultsToMongo( SortedVector<PairSubmission> pairSubmissions
     ) throws ExitException {
-        options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
-        options.setProgress(0);
+        List<Document> comparePairList=new ArrayList<Document>();
         if(pairSubmissions.size()<=0){
-            System.out.println("未检查到相似代码！ similar code not found!");
+            options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
+            options.setProgress(0);
+            print("未检查到相似代码！ similar code not found!");
+            Document doc=new Document("cid",getCid());
+            doc.append("pid",options.getPid());
+            doc.append("comparisonPairs",comparePairList);
+            this.options.dbHelper.writeDocument(doc);
+            options.setProgress(60);
+            options.setProgress(100);
             return;
         }
+
+        int count=0;
+        int totalResult=pairSubmissions.size();
+        options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
+        options.setProgress(0);
+
         Iterator<PairSubmission>iter=pairSubmissions.iterator();
-        List<Document> comparePairList=new ArrayList<Document>();
         while(iter.hasNext()){
+            count++;
+            options.setProgress(count * 100 / totalResult);
             PairSubmission tmpPair=iter.next();
             Document tmpDocument=new Document();
             tmpDocument.append("cid",tmpPair.subA.getCid());
@@ -245,6 +276,8 @@ public class Program implements ProgramI {
 
             comparePairList.add(tmpDocument);
         }
+        options.setProgress(100);
+
         Document doc=new Document("cid",pairSubmissions.elementAt(0).subA.getCid());
         doc.append("pid",pairSubmissions.elementAt(0).subA.getPid());
         doc.append("comparisonPairs",comparePairList);
@@ -252,12 +285,12 @@ public class Program implements ProgramI {
 
     }
 
-    private void writeResultToFile(int[] dist, SortedVector<PairSubmission> pairSubmissions
+    private void writeResultToFile(SortedVector<PairSubmission> pairSubmissions
     ) throws ExitException {
         options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
         options.setProgress(0);
         if(pairSubmissions.size()<=0){
-            System.out.println("未检查到相似代码！ similar code not found!");
+            print("未检查到相似代码！ similar code not found!\n");
             return;
         }
         int cid=pairSubmissions.elementAt(0).subA.getCid();
@@ -307,17 +340,18 @@ public class Program implements ProgramI {
         long msec = System.currentTimeMillis();//开始时间
         Submission s1, s2;
 
+        int totalcomps = (size - 1) * size / 2;
         options.setState(Options.STATE_COMPARING);
         options.setProgress(0);
 
-        int totalcomps = (size - 1) * size / 2;
         int i, j, comOK = 0, countAll = 0;
 
         PairSubmission pairSubmission;
         for (i = 0; i < (size - 1); ++i) {
             s1 = submissions.elementAt(i);
             if (s1.struct == null) {
-                countAll++;
+                countAll += (size - i - 1);
+                options.setProgress(countAll * 100 / totalcomps);
                 continue;
             }
             for (j = i + 1; j < size; j++) {
@@ -332,7 +366,7 @@ public class Program implements ProgramI {
 
                 print("|----Compared " + s1.name + "-" + s2.name + " match percent: " + pairSubmission.percent()+"\n");
 
-                registerMatch(pairSubmission, dist, avgmatches);
+                registerMatch(pairSubmission,  avgmatches);
                 options.setProgress(countAll * 100 / totalcomps);
 
             }
@@ -340,7 +374,7 @@ public class Program implements ProgramI {
         options.setProgress(100);
         long time = System.currentTimeMillis() - msec;
         print("Total time for comparing submissions: " + ((time / 3600000 > 0) ? (time / 3600000) + " h " : "")
-                + ((time / 60000 > 0) ? ((time / 60000) % 60000) + " min " : "") + (time / 1000 % 60) + " sec\n" + "Time per comparison: "
+                + ((time / 60000 > 0) ? ((time / 60000) % 60) + " min " : "") + (time / 1000 % 60) + " sec\n" + "Time per comparison: "
                 + (comOK==0?0 : (time / comOK)) + " msec\n");
 
         //Cluster cluster = null;
@@ -348,14 +382,14 @@ public class Program implements ProgramI {
         //   cluster = this.clusters.calculateClustering(submissions);
 
         if (!options.isWriteResultToFile())
-            writeResultsToMongo(dist, avgmatches);
+            writeResultsToMongo(avgmatches);
         else
-            writeResultToFile(dist, avgmatches);
+            writeResultToFile(avgmatches);
 
     }
 
     private void run() throws ExitException {
-        creatSubmission();
+        createSubmission();
         parseAll();
         System.gc();
         if (validSubmissions() < 2) {
@@ -376,17 +410,20 @@ public class Program implements ProgramI {
             System.gc();
         }
         else {//对比赛查重
+            this.options.dbHelper.setHasCDC(getCid(),false);
             while (this.options.dbHelper.isHaveProblemNotCheck()) {
                 try {
                     run();
                 }catch (ExitException e){
                     if(e.getState()==ExitException.NOT_ENOUGH_SUBMISSIONS_ERROR){
-                        System.out.println(e.getReport());
+                        print(e.getReport());
                     }else
                         throw e;
                 }
                 System.gc();
             }
+            this.options.dbHelper.setHasCDC(getCid(),true);
+            this.options.dbHelper.delProgressInDB(getCid());
         }
 
     }

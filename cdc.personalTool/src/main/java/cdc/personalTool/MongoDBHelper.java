@@ -27,6 +27,9 @@ public class MongoDBHelper implements DBHelper {
     private static String DBNAME = "testlhf";
     private static String HOST = "localhost";
     private static int PORT = 27017;
+    private Document currentProblemDoc;
+    private int problem_num;
+
 
     public MongoDBHelper(ProgramI p) {
         program = p;
@@ -35,31 +38,113 @@ public class MongoDBHelper implements DBHelper {
     }
 
     @Override
+    public void delProgressInDB(int cid) {
+        MongoClient mongoClient = new MongoClient(HOST, PORT);
+        MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
+        MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CDC_PROGRESS");
+        colSCONTEST.deleteOne(Filters.eq("cid", cid));
+        mongoClient.close();
+    }
+
+    @Override
+    public void setProgressToDB(int cid, int pid, String labelAndName, int state_progress, int state, String task_id) {
+        BasicDBObject progress = new BasicDBObject();
+        int problem_progress;
+        if (state == STATE_SUBMITTING) {
+            progress.put("state", "submitting_code");
+            problem_progress = STATE_SUBMITTING * state_progress / 100;
+        } else if (state == STATE_PARSING) {
+            progress.put("state", "parsing_code");
+            problem_progress = STATE_SUBMITTING + (STATE_PARSING - STATE_SUBMITTING) * state_progress / 100;
+        } else if (state == STATE_COMPARING) {
+            progress.put("state", "comparing_code");
+            problem_progress = STATE_PARSING + (STATE_COMPARING - STATE_PARSING) * state_progress / 100;
+        } else {
+            progress.put("state", "generating_answer");
+            problem_progress = STATE_COMPARING + (STATE_GENERATING_RESULT_TO_FILES - STATE_COMPARING) * state_progress / 100;
+        }
+        progress.put("state_progress", state_progress);
+
+
+        progress.put("pid", pid);
+        progress.put("problemLabelAndName", labelAndName);
+        progress.put("problem_progress", problem_progress);
+
+        progress.put("cid", cid);
+        int leftProblemNum = problemList.size();
+        int nowProblemNo = problem_num - leftProblemNum;
+        int contest_progress = ((nowProblemNo == 0 ? nowProblemNo : nowProblemNo - 1) * 100
+                + problem_progress) / problem_num;
+        progress.put("contest_progress",
+                contest_progress);
+
+        progress.put("task_id", task_id);
+
+//        System.out.println("\nstate: " + state);
+//        System.out.println("state_progress: " + state_progress);
+//        System.out.println("problem_progress: " + problem_progress);
+//        System.out.println("contest_progress: " + contest_progress);
+
+        MongoClient mongoClient = new MongoClient(HOST, PORT);
+        MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
+        MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CDC_PROGRESS");
+        colSCONTEST.updateOne(Filters.eq("cid", cid),
+                new BasicDBObject("$set", progress), new UpdateOptions().upsert(true));
+        mongoClient.close();
+
+
+    }
+
+    @Override
+    public String getLabelAndName() {
+        return currentProblemDoc.getString("label") + " "
+                + currentProblemDoc.getString("title");
+    }
+
+    @Override
+    public int getPid() {
+        return currentProblemDoc.getInteger("pid");
+    }
+
+
+    @Override
+    public void setHasCDC(int cid, boolean isCDC) {
+        /**
+         * 在SDUTOJ_CONTEST集合文档中添加hasCDC字段，表示已经查重过该比赛
+         */
+        MongoClient mongoClient = new MongoClient(HOST, PORT);
+        MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
+        MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CONTEST");
+        colSCONTEST.updateOne(Filters.eq("cid", cid),
+                Updates.set("hasCDC", isCDC));
+    }
+
+    @Override
     public ArrayList<Document> getTokensByRunid(int runid) {
         MongoClient mongoClient = new MongoClient(HOST, PORT);
         MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
         MongoCollection<Document> dbCollection_SSTATUS = mongoDB.getCollection("SDUTOJ_STATUS");
-        ArrayList<Document>tokens=null;
-        Iterator<Document>iter= dbCollection_SSTATUS.find(
-                Filters.eq("runid",runid)).projection(
-                        new BasicDBObject("tokens",true)).iterator();
-        if(iter.hasNext()){
-            tokens=(ArrayList<Document>)iter.next().get("tokens");
+        ArrayList<Document> tokens = null;
+        Iterator<Document> iter = dbCollection_SSTATUS.find(
+                Filters.eq("runid", runid)).projection(
+                new BasicDBObject("tokens", true)).iterator();
+        if (iter.hasNext()) {
+            tokens = (ArrayList<Document>) iter.next().get("tokens");
         }
         mongoClient.close();
         return tokens;
     }
 
     @Override
-    public void wirteParseAnsToMongo(int runid,Structure struc) {
-        ArrayList<BasicDBObject> tokens=new ArrayList<>();
-        for(int i=0;i<struc.tokenLength();++i){
-            BasicDBObject tmpObj=new BasicDBObject();
-            tmpObj.put("type",struc.tokens[i].getType());
-            tmpObj.put("line",struc.tokens[i].getLine());
-            tmpObj.put("column",struc.tokens[i].getColumn());
-            tmpObj.put("length",struc.tokens[i].getLength());
-            tmpObj.put("runidOrFileName",struc.tokens[i].getRunidOrFileName());
+    public void wirteParseAnsToMongo(int runid, Structure struc) {
+        ArrayList<BasicDBObject> tokens = new ArrayList<>();
+        for (int i = 0; i < struc.tokenLength(); ++i) {
+            BasicDBObject tmpObj = new BasicDBObject();
+            tmpObj.put("type", struc.tokens[i].getType());
+            tmpObj.put("line", struc.tokens[i].getLine());
+            tmpObj.put("column", struc.tokens[i].getColumn());
+            tmpObj.put("length", struc.tokens[i].getLength());
+            tmpObj.put("runidOrFileName", struc.tokens[i].getRunidOrFileName());
             tokens.add(tmpObj);
         }
 //        BasicDBObject parseAns=new BasicDBObject("tokens",tokens);
@@ -69,29 +154,28 @@ public class MongoDBHelper implements DBHelper {
         MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
         MongoCollection<Document> dbCollection_SSTATUS = mongoDB.getCollection("SDUTOJ_STATUS");
 
-        if(program.isReParse())
-            dbCollection_SSTATUS.updateOne(Filters.eq("runid",runid),
-                    Updates.set("tokens",tokens));
+        if (program.isReParse())
+            dbCollection_SSTATUS.updateOne(Filters.eq("runid", runid),
+                    Updates.set("tokens", tokens));
         else
-            dbCollection_SSTATUS.updateOne(Filters.and(Filters.eq("runid",runid),Filters.exists("tokens",false)),
-                Updates.set("tokens",tokens));
+            dbCollection_SSTATUS.updateOne(Filters.and(Filters.eq("runid", runid), Filters.exists("tokens", false)),
+                    Updates.set("tokens", tokens));
         mongoClient.close();
     }
 
     @Override
-    public String getCodeByRunid(int runid) throws cdc.exceptions.ExitException{
+    public String getCodeByRunid(int runid) throws cdc.exceptions.ExitException {
         MongoClient mongoClient = new MongoClient(HOST, PORT);
         MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
         MongoCollection<Document> dbCollection_SSGSTANS = mongoDB.getCollection("SDUTOJ_STATUS");
         BasicDBObject filterRunid = new BasicDBObject("runid", runid);
-        Iterator<Document>iter=dbCollection_SSGSTANS.find(filterRunid).iterator();
+        Iterator<Document> iter = dbCollection_SSGSTANS.find(filterRunid).iterator();
         String code;
-        if(iter.hasNext()){
-            code=iter.next().getString("code");
-        }
-        else
+        if (iter.hasNext()) {
+            code = iter.next().getString("code");
+        } else
             throw new cdc.exceptions.ExitException("Error in MongoDBHelper.java::getCodeByRunid()::"
-                    +"runid "+runid+" not found!\n");
+                    + "runid " + runid + " not found!\n");
         mongoClient.close();
         return code;
     }
@@ -103,30 +187,43 @@ public class MongoDBHelper implements DBHelper {
     }
 
     @Override
-    public void prepareData() throws cdc.exceptions.ExitException{
+    public void prepareData() throws cdc.exceptions.ExitException {
         try {
             MongoClient mongoClient = new MongoClient(HOST, PORT);
             MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
 
             MongoCollection<Document> dbCollection_SDUTOJ = mongoDB.getCollection("SDUTOJ_CONTEST");
-            Document contestDoc;
-
+            Document currentontestDoc;
             /**
              * 指定查找返回的键
              */
-            Iterator<Document> iter= dbCollection_SDUTOJ.find(
-                    Filters.eq("cid",
-                            this.program.getCid())).projection(
-                                    new BasicDBObject("problem.comparisonPairs",0)).iterator();
-            if(!iter.hasNext())
+            Iterator<Document> iter = dbCollection_SDUTOJ.find(
+                    Filters.eq("cid", this.program.getCid())).projection(
+                    new BasicDBObject(
+                    ).append("cid", 1
+                    ).append("name", 1
+                    ).append("problem.all_submit", 1
+                    ).append("problem.title", 1
+                    ).append("problem.cid", 1
+                    ).append("problem.pid", 1
+                    ).append("problem.label", 1)).iterator();
+//            Iterator<Document> iter = dbCollection_SDUTOJ.find(
+//                    Filters.eq("cid", this.program.getCid())).projection(
+//                    new BasicDBObject(
+//                    ).append("problem.comparisonPairs", 0
+//                    ).append("ranklist", 0)).iterator();
+            if (!iter.hasNext())
                 throw new cdc.exceptions.ExitException("Error in MongoDBHelper.java::prepareData()::contest_"
-                        +this.program.getCid()+" not found!\n");
+                        + this.program.getCid() + " not found!\n");
             else
-                contestDoc=iter.next();
+                currentontestDoc = iter.next();
 //            System.out.println(contestDoc.size());
 //
 //            System.out.println(contestDoc.get("cid").toString());
-            problemList = (List<Document>) contestDoc.get("problem");
+//            System.out.println(contestDoc.keySet());//TODO
+            problemList = (List<Document>) currentontestDoc.get("problem");
+            problem_num = problemList.size();
+//            System.out.println(problemList.get(0).keySet());
             mongoClient.close();
 
         } catch (MongoException e) {
@@ -137,21 +234,25 @@ public class MongoDBHelper implements DBHelper {
 
     @Override
     public Vector<SubmissionBase> getSubmissionListAndRemove() {
-        Document problemDoc = (Document) problemList.get(0);
+        currentProblemDoc = (Document) problemList.get(0);
         problemList.remove(0);
-        if (problemDoc.containsKey("all_submit")) {
-            ArrayList<Document> mongoSubmitList = (ArrayList<Document>) problemDoc.get("all_submit");
+        if (currentProblemDoc.containsKey("all_submit")) {
+            ArrayList<Document> mongoSubmitList = (ArrayList<Document>) currentProblemDoc.get("all_submit");
             Iterator<Document> iter = mongoSubmitList.iterator();
             Vector<SubmissionBase> submissions = new Vector<SubmissionBase>();
             while (iter.hasNext()) {
                 Document tmp = iter.next();
                 int result = Integer.parseInt(tmp.get("result").toString());
-                if(result!= SubmissionBase.ACCEPTED)//只添加结果为ac的submission
+                if (result != SubmissionBase.ACCEPTED)//只添加结果为ac的submission
                     continue;
                 int cid = Integer.parseInt(tmp.get("cid").toString());
                 int pid = Integer.parseInt(tmp.get("pid").toString());
                 int runid = Integer.parseInt(tmp.get("runid").toString());
-                String name = tmp.get("user_name").toString()+"_Runid_"+runid;
+                String name;
+                if (program.isQuiet())
+                    name=tmp.getString("user_name");
+                else
+                    name = tmp.getString("user_name")+ "_Runid_" + runid;
                 //String code=tmp.get ("code").toString();
                 //code不再存在contest的信息文档中
                 String languageType = tmp.get("language").toString();
@@ -164,18 +265,19 @@ public class MongoDBHelper implements DBHelper {
 
     /**
      * 将查重结果的重复配对写入mongo
+     *
      * @param doc {cid:?, pid:?, comparisonPairs:? }
      */
 
     @Override
-    public void writeDocument(Document doc) throws cdc.exceptions.ExitException{
+    public void writeDocument(Document doc) throws cdc.exceptions.ExitException {
         long msec = System.currentTimeMillis();//开始时间
         int cid = Integer.parseInt(doc.get("cid").toString());
         int pid = Integer.parseInt(doc.get("pid").toString());
         try {
             MongoClient mongoClient = new MongoClient(HOST, PORT);
             MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
-            MongoCollection<Document> dbCollection_SCONTEST = mongoDB.getCollection("SDUTOJ_CONTEST");
+            MongoCollection<Document> colSCONTEST_CDC_ANS = mongoDB.getCollection("SDUTOJ_CONTEST_CDC_ANS");
 
             /**
              * 用来往集合中匹配cid和problem.$.pid的文档中的‘problem’列表中指定位置中添加一个键值对
@@ -187,14 +289,16 @@ public class MongoDBHelper implements DBHelper {
              * 详细见博客MongoDB操作：
              */
             BasicDBObject filters = new BasicDBObject("cid", cid);
-            filters.put("problem.pid", pid);//也可以使用Filters.and()
+            filters.put("pid", pid);//也可以使用Filters.and()
 
-            if(program.isReCDC())
-                dbCollection_SCONTEST.updateOne(filters,
-                        Updates.set("problem.$.comparisonPairs", doc.get("comparisonPairs")));
-            else{
-                dbCollection_SCONTEST.updateOne(filters,
-                        Updates.addEachToSet("problem.$.comparisonPairs", (List) doc.get("comparisonPairs")));
+            if (program.isReCDC())
+                colSCONTEST_CDC_ANS.updateOne(filters,
+                        Updates.set("comparisonPairs", doc.get("comparisonPairs")),
+                        new UpdateOptions().upsert(true));
+            else {
+                colSCONTEST_CDC_ANS.updateOne(filters,
+                        Updates.addEachToSet("comparisonPairs", (List) doc.get("comparisonPairs")),
+                        new UpdateOptions().upsert(true));
             }
 //            BasicDBObject update=new BasicDBObject("$push",new BasicDBObject("problem.$.num",
 //                    new BasicDBObject("$each",doc.get("comparisonPairs"))));
@@ -209,14 +313,15 @@ public class MongoDBHelper implements DBHelper {
 //            DB db = new MongoClient().getDB("testlhf");
 //            DBCollection coll = db.getCollection("test");
 //            coll.update(filterCid,update,true,false);
+
             mongoClient.close();
         } catch (Exception e) {
             e.printStackTrace();
             throw new cdc.exceptions.ExitException("Error in MongoDBHelper.java::writeDocument()\n");
-        }finally {
+        } finally {
             long time = System.currentTimeMillis() - msec;
-            System.out.println("\n\n\nTotal time for write CDC_ANS to Mongo: " + ((time / 3600000 > 0) ? (time / 3600000) + " h " : "")
-                    + ((time / 60000 > 0) ? ((time / 60000) % 60000) + " min " : "") + (time / 1000 % 60) + " sec\n");
+            program.print("\n\n\nTotal time for write CDC_ANS to Mongo: " + ((time / 3600000 > 0) ? (time / 3600000) + " h " : "")
+                    + ((time / 60000 > 0) ? ((time / 60000) % 60) + " min " : "") + (time / 1000 % 60) + " sec\n");
         }
     }
 

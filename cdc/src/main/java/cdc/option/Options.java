@@ -34,8 +34,20 @@ abstract public class Options {
     }
 
     public int cid;
+    public int pid;
+    public String nowProblemLabelAndName;
     public String root_dir = "./";
     public String result_dir = "result";
+    public void setPidLabelAndName(String t){
+        nowProblemLabelAndName=t;
+    }
+
+    public void setPid(int pid) {
+        this.pid = pid;
+    }
+    public int getPid(){
+        return pid;
+    }
 
     public String[] suffixes;
     public String[] languageTypes;
@@ -44,36 +56,29 @@ abstract public class Options {
 
     //public static final int MAX_RESULT_PAIRS=1000;
 
-    public static final int COMPMODE_NORMAL = 0;
-    public static final int COMPMODE_REVISION = 1;
-    public int comparisonMode = COMPMODE_NORMAL;
+//    public static final int COMPMODE_NORMAL = 0;
+//    public static final int COMPMODE_REVISION = 1;
+//    public int comparisonMode = COMPMODE_NORMAL;
 
     public String commandLine = "";
 
-    public static final int STATE_PARSING = 100;
-    public static final int STATE_PARSING_WARNINGS = 101;
-    public static final int STATE_COMPARING = 200;
-    public static final int STATE_GENERATING_RESULT_TO_FILES = 250;
-    public static final int STATE_SUBMISSION_ABORTED = 405;
-    private int state=50;
+    public static final int STATE_SUBMITTING = 8;
+    public static final int STATE_PARSING = 68;
+    public static final int STATE_COMPARING = 88;
+    public static final int STATE_GENERATING_RESULT_TO_FILES = 100;
+    private int state=STATE_SUBMITTING;
     private int int_progress=0;
-    private boolean forceStop=false;
 
-    public void forceProgramToStop(){
-        forceStop=true;
-    }
-
-    public boolean isForceStop() {
-        return forceStop;
-    }
 
     public int getState(){return state;}
 
     //设置parse的进度
-    public void setProgress(int progress) throws cdc.exceptions.ExitException{
+    public void setProgress(int progress) {
+        if(progress!=int_progress){
+            dbHelper.setProgressToDB(cid,pid,nowProblemLabelAndName,
+                    progress,state,task_id);
+        }
         int_progress=progress;
-        if(forceStop)
-            throw new cdc.exceptions.ExitException("Sbumission aborted",ExitException.SUBMISSION_ABORTED);
     }
     //获取parse的进度
     public int getProgress(){
@@ -129,6 +134,11 @@ abstract public class Options {
     public boolean ifOnePersonOneCode=false;
     public boolean ifReCDC=false;//全新进行查重 仅DIDO生效
     public boolean ifReParse=false;//重新Parse,仅DIDO生效
+
+    /**
+     * celery task id
+     */
+    public String task_id="null";
 
 
 }
