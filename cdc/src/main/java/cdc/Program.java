@@ -24,6 +24,11 @@ public class Program implements ProgramI {
     }
 
     @Override
+    public String getTaskID() {
+        return options.task_id;
+    }
+
+    @Override
     public boolean isQuiet() {
         return options.msg_quiet;
     }
@@ -411,6 +416,7 @@ public class Program implements ProgramI {
         }
         else {//对比赛查重
             this.options.dbHelper.setHasCDC(getCid(),false);
+            this.options.dbHelper.setTaskID();
             while (this.options.dbHelper.isHaveProblemNotCheck()) {
                 try {
                     run();
@@ -423,7 +429,7 @@ public class Program implements ProgramI {
                 System.gc();
             }
             this.options.dbHelper.setHasCDC(getCid(),true);
-            this.options.dbHelper.delProgressInDB(getCid());
+            this.options.dbHelper.removeTaskID();
         }
 
     }

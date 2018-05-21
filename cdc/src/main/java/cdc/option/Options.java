@@ -75,8 +75,9 @@ abstract public class Options {
     //设置parse的进度
     public void setProgress(int progress) {
         if(progress!=int_progress){
-            dbHelper.setProgressToDB(cid,pid,nowProblemLabelAndName,
-                    progress,state,task_id);
+            if(!isWriteResultToFile())
+                dbHelper.setProgressToDB(cid,pid,nowProblemLabelAndName,
+                        progress,state,task_id);
         }
         int_progress=progress;
     }

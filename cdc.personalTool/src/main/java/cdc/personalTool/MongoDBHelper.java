@@ -38,11 +38,22 @@ public class MongoDBHelper implements DBHelper {
     }
 
     @Override
-    public void delProgressInDB(int cid) {
+    public void removeTaskID() {
         MongoClient mongoClient = new MongoClient(HOST, PORT);
         MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
-        MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CDC_PROGRESS");
-        colSCONTEST.deleteOne(Filters.eq("cid", cid));
+        MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CONTEST");
+        colSCONTEST.updateOne(Filters.eq("cid", program.getCid()),
+                Updates.unset("task_id"));
+        mongoClient.close();
+    }
+
+    @Override
+    public void setTaskID() {
+        MongoClient mongoClient = new MongoClient(HOST, PORT);
+        MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
+        MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CONTEST");
+        colSCONTEST.updateOne(Filters.eq("cid", program.getCid()),
+                Updates.set("task_id",program.getTaskID()));
         mongoClient.close();
     }
 
@@ -78,7 +89,7 @@ public class MongoDBHelper implements DBHelper {
         progress.put("contest_progress",
                 contest_progress);
 
-        progress.put("task_id", task_id);
+//        progress.put("task_id", task_id);
 
 //        System.out.println("\nstate: " + state);
 //        System.out.println("state_progress: " + state_progress);
@@ -87,8 +98,8 @@ public class MongoDBHelper implements DBHelper {
 
         MongoClient mongoClient = new MongoClient(HOST, PORT);
         MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
-        MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CDC_PROGRESS");
-        colSCONTEST.updateOne(Filters.eq("cid", cid),
+        MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CDC_STATUS");
+        colSCONTEST.updateOne(Filters.eq("_id", task_id),
                 new BasicDBObject("$set", progress), new UpdateOptions().upsert(true));
         mongoClient.close();
 

@@ -13,9 +13,13 @@ public interface DBHelper {
     public static final int STATE_GENERATING_RESULT_TO_FILES = 100;
 
     /**
-     * 删除mongo中的进度
+     *
      */
-    public void delProgressInDB(int cid);
+    public void removeTaskID();
+    /**
+     *
+     */
+    public  void setTaskID();
     /**
      * 将进度写入mongoDB
      *
