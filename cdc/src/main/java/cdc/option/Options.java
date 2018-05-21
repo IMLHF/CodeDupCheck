@@ -138,7 +138,7 @@ abstract public class Options {
     /**
      * celery task id
      */
-    public String task_id="null";
+    public String task_id=""+System.currentTimeMillis();
 
 
 }

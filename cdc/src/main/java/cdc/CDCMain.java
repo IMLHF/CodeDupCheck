@@ -21,7 +21,6 @@ public class CDCMain {
             program.print("Initialize OK");
             program.runcodeChecker();
         } catch (ExitException e) {
-            e.printStackTrace();
             System.out.println("ERROR: " + e.getReport());
             System.exit(e.getState());
         }
