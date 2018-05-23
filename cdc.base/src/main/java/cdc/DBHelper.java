@@ -24,7 +24,7 @@ public interface DBHelper {
      * 将进度写入mongoDB
      *
      */
-    public void setProgressToDB(int cid,int pid,String labelAndName,int state_progress,int state,String task_id);
+    public void setProgressToDB(int cid,int pid,String labelAndName,int state_progress,int state,String task_id,long time);
     /**
      * 获取当前题目的Label 和名称
      */

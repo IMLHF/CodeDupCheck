@@ -68,6 +68,7 @@ abstract public class Options {
     public static final int STATE_GENERATING_RESULT_TO_FILES = 100;
     private int state=STATE_SUBMITTING;
     private int int_progress=0;
+    public long starttime=System.currentTimeMillis();
 
 
     public int getState(){return state;}
@@ -75,9 +76,10 @@ abstract public class Options {
     //设置parse的进度
     public void setProgress(int progress) {
         if(progress!=int_progress){
+            long time=(System.currentTimeMillis()-starttime)/1000;
             if(!isWriteResultToFile())
                 dbHelper.setProgressToDB(cid,pid,nowProblemLabelAndName,
-                        progress,state,task_id);
+                        progress,state,task_id,time);
         }
         int_progress=progress;
     }

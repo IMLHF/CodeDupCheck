@@ -58,7 +58,7 @@ public class MongoDBHelper implements DBHelper {
     }
 
     @Override
-    public void setProgressToDB(int cid, int pid, String labelAndName, int state_progress, int state, String task_id) {
+    public void setProgressToDB(int cid, int pid, String labelAndName, int state_progress, int state, String task_id,long time) {
         BasicDBObject progress = new BasicDBObject();
         int problem_progress;
         if (state == STATE_SUBMITTING) {
@@ -88,6 +88,7 @@ public class MongoDBHelper implements DBHelper {
                 + problem_progress) / problem_num;
         progress.put("contest_progress",
                 contest_progress);
+        progress.put("time",time);
 
 //        progress.put("task_id", task_id);
 
