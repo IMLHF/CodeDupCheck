@@ -115,7 +115,7 @@ public class MongoDBHelper implements DBHelper {
 
     @Override
     public int getPid() {
-        return currentProblemDoc.getInteger("pid");
+        return Integer.parseInt(currentProblemDoc.get("pid").toString());
     }
 
 
