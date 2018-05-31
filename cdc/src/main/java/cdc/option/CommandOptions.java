@@ -108,7 +108,8 @@ public class CommandOptions extends Options {
                     Object[] ob = {program};
                     this.language = (Language) cons.newInstance(ob);
                     program.print("Language received ----------------  " + language.name()+"\n");
-                    this.min_token_match = this.language.min_token_match();
+                    if(!this.min_token_match_setting)
+                        this.min_token_match = this.language.min_token_match();
                     this.suffixes = language.suffixes();
                     this.languageTypes=language.languageType();
                 } catch (ClassNotFoundException e) {

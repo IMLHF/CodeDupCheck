@@ -3,6 +3,7 @@ package cdc;
 import cdc.exceptions.ExitException;
 import cdc.option.Options;
 import org.bson.Document;
+
 import java.io.*;
 import java.util.*;
 
@@ -15,7 +16,8 @@ public class Program implements ProgramI {
 
     public int parseErrorsNum;
 
-    private TokenMatchingGST tokenMatchingGST=new TokenMatchingGST(this);;
+    private TokenMatchingGST tokenMatchingGST = new TokenMatchingGST(this);
+    ;
 
     public Program(Options options) throws ExitException {
         this.options = options;
@@ -120,10 +122,10 @@ public class Program implements ProgramI {
             options.setPid(options.dbHelper.getPid());
             options.setPidLabelAndName(options.dbHelper.getLabelAndName());
             Iterator<SubmissionBase> iter = base.iterator();
-            Set<String>nameSet=new HashSet<String>();
+            Set<String> nameSet = new HashSet<String>();
 
-            int count=0;
-            int totalcount=base.size();
+            int count = 0;
+            int totalcount = base.size();
             options.setState(Options.STATE_SUBMITTING);
             options.setProgress(0);
 
@@ -133,7 +135,7 @@ public class Program implements ProgramI {
                 SubmissionBase tempBase = iter.next();
 
                 //过滤代码语言
-                String lanType=tempBase.languageType;
+                String lanType = tempBase.languageType;
                 boolean languageTypeOk = false;
                 for (int j = 0; j < options.languageTypes.length; ++j) {
                     if (lanType.endsWith(options.languageTypes[j])) {
@@ -145,18 +147,18 @@ public class Program implements ProgramI {
                     continue;
 
                 //过滤ac的结果
-                int subResult=tempBase.result;
-                if(subResult==SubmissionBase.ACCEPTED){
-                    if(options.ifOnePersonOneCode){//一人只留一份ac的代码
-                        if(nameSet.add(tempBase.name)) {
+                int subResult = tempBase.result;
+                if (subResult == SubmissionBase.ACCEPTED) {
+                    if (options.ifOnePersonOneCode) {//一人只留一份ac的代码
+                        if (nameSet.add(tempBase.name)) {
                             submissions.addElement(
-                                    new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.name,
+                                    new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.uid, tempBase.name,
                                             this, this.options.language)
                             );
                         }
-                    }else{
+                    } else {
                         submissions.addElement(
-                                new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.name,
+                                new Submission(tempBase.cid, tempBase.pid, tempBase.runid, tempBase.uid, tempBase.name,
                                         this, this.options.language)
                         );
                     }
@@ -164,7 +166,7 @@ public class Program implements ProgramI {
 
             }
             options.setProgress(100);
-            nameSet=null;
+            nameSet = null;
         }
     }
 
@@ -193,17 +195,16 @@ public class Program implements ProgramI {
             count++;
             if (subm.struct != null && subm.tokenLength() < options.min_token_match) {
                 print("          |----Submission contains fewer tokens than minimum match " + get_min_token_match() + "\n");
-                this.options.dbHelper.wirteParseAnsToMongo(subm.getRunid(),subm.struct);
+                this.options.dbHelper.wirteParseAnsToMongo(subm.getRunid(), subm.struct);
                 subm.struct = null;
                 invalid++;
                 removed = true;
             }
-            if (parseOk && !removed){
-                if(!this.options.isWriteResultToFile())
-                    this.options.dbHelper.wirteParseAnsToMongo(subm.getRunid(),subm.struct);
+            if (parseOk && !removed) {
+                if (!this.options.isWriteResultToFile())
+                    this.options.dbHelper.wirteParseAnsToMongo(subm.getRunid(), subm.struct);
                 print("                                    |----OK\n");
-            }
-            else
+            } else
                 print("          |----ERROR -> Submission removed\n");
 
         }
@@ -230,62 +231,64 @@ public class Program implements ProgramI {
 //            options.sim
     }
 
-    private void writeResultsToMongo( SortedVector<PairSubmission> pairSubmissions
+    private void writeResultsToMongo(SortedVector<PairSubmission> pairSubmissions
     ) throws ExitException {
-        List<Document> comparePairList=new ArrayList<Document>();
-        if(pairSubmissions.size()<=0){
+        List<Document> comparePairList = new ArrayList<Document>();
+        if (pairSubmissions.size() <= 0) {
             options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
             options.setProgress(0);
             print("未检查到相似代码！ similar code not found!");
-            Document doc=new Document("cid",getCid());
-            doc.append("pid",options.getPid());
-            doc.append("comparisonPairs",comparePairList);
+            Document doc = new Document("cid", getCid());
+            doc.append("pid", options.getPid());
+            doc.append("comparisonPairs", comparePairList);
             this.options.dbHelper.writeDocument(doc);
             options.setProgress(60);
             options.setProgress(100);
             return;
         }
 
-        int count=0;
-        int totalResult=pairSubmissions.size();
+        int count = 0;
+        int totalResult = pairSubmissions.size();
         options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
         options.setProgress(0);
 
-        Iterator<PairSubmission>iter=pairSubmissions.iterator();
-        while(iter.hasNext()){
+        Iterator<PairSubmission> iter = pairSubmissions.iterator();
+        while (iter.hasNext()) {
             count++;
             options.setProgress(count * 100 / totalResult);
-            PairSubmission tmpPair=iter.next();
-            Document tmpDocument=new Document();
-            tmpDocument.append("cid",tmpPair.subA.getCid());
+            PairSubmission tmpPair = iter.next();
+            Document tmpDocument = new Document();
+            tmpDocument.append("cid", tmpPair.subA.getCid());
 
-            tmpDocument.append("runidA",tmpPair.subA.getRunid());
-            tmpDocument.append("codeNameA",tmpPair.subA.name);
-            tmpDocument.append("pidA",tmpPair.subA.getPid());
-            tmpDocument.append("runidB",tmpPair.subB.getRunid());
-            tmpDocument.append("codeNameB",tmpPair.subB.name);
-            tmpDocument.append("pidB",tmpPair.subB.getPid());
+            tmpDocument.append("runidA", tmpPair.subA.getRunid());
+            tmpDocument.append("uidA", tmpPair.subA.getUid());
+            tmpDocument.append("codeNameA", tmpPair.subA.name);
+            tmpDocument.append("pidA", tmpPair.subA.getPid());
+            tmpDocument.append("runidB", tmpPair.subB.getRunid());
+            tmpDocument.append("uidB", tmpPair.subB.getUid());
+            tmpDocument.append("codeNameB", tmpPair.subB.name);
+            tmpDocument.append("pidB", tmpPair.subB.getPid());
 
-            List<Document> matchesList=new ArrayList<Document>();
-            Match[] matches=tmpPair.matches;
+            List<Document> matchesList = new ArrayList<Document>();
+            Match[] matches = tmpPair.matches;
             //System.out.println("_____________num    "+tmpPair.matchesNum());
-            for(int i=0;i<tmpPair.matchesNum();++i){
-                Document tmpDoc=new Document();
-                tmpDoc.append("startA",matches[i].startA);
-                tmpDoc.append("startB",matches[i].startB);
-                tmpDoc.append("length",matches[i].length);
+            for (int i = 0; i < tmpPair.matchesNum(); ++i) {
+                Document tmpDoc = new Document();
+                tmpDoc.append("startA", matches[i].startA);
+                tmpDoc.append("startB", matches[i].startB);
+                tmpDoc.append("length", matches[i].length);
                 matchesList.add(tmpDoc);
             }
-            tmpDocument.append("matches",matchesList);
-            tmpDocument.append("matchesPercent",tmpPair.percent());
+            tmpDocument.append("matches", matchesList);
+            tmpDocument.append("matchesPercent", tmpPair.percent());
 
             comparePairList.add(tmpDocument);
         }
         options.setProgress(100);
 
-        Document doc=new Document("cid",pairSubmissions.elementAt(0).subA.getCid());
-        doc.append("pid",pairSubmissions.elementAt(0).subA.getPid());
-        doc.append("comparisonPairs",comparePairList);
+        Document doc = new Document("cid", pairSubmissions.elementAt(0).subA.getCid());
+        doc.append("pid", pairSubmissions.elementAt(0).subA.getPid());
+        doc.append("comparisonPairs", comparePairList);
         this.options.dbHelper.writeDocument(doc);
 
     }
@@ -294,12 +297,12 @@ public class Program implements ProgramI {
     ) throws ExitException {
         options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
         options.setProgress(0);
-        if(pairSubmissions.size()<=0){
+        if (pairSubmissions.size() <= 0) {
             print("未检查到相似代码！ similar code not found!\n");
             return;
         }
-        int cid=pairSubmissions.elementAt(0).subA.getCid();
-        int pid=pairSubmissions.elementAt(0).subA.getPid();
+        int cid = pairSubmissions.elementAt(0).subA.getCid();
+        int pid = pairSubmissions.elementAt(0).subA.getPid();
         File f = new File(options.result_dir);
         if (!f.exists())
             if (!f.mkdirs())
@@ -309,25 +312,25 @@ public class Program implements ProgramI {
         if (!f.canWrite())
             throw new ExitException("Cannot write directory " + options.result_dir);
 
-        File resultFile = new File(f, "result_PID_"+pid+"_CID_"+cid+".text");
+        File resultFile = new File(f, "result_PID_" + pid + "_CID_" + cid + ".text");
         try {
             if (!resultFile.exists())
                 resultFile.createNewFile();
             FileWriter fw;
-            fw=new FileWriter(resultFile);
+            fw = new FileWriter(resultFile);
             //fw=new FileWriter(resultFile,true);
             PrintWriter pw = new PrintWriter(fw);
-            String result="cid : "+cid+",  pid: "+pid+"  -----------------------------------\n\n\n\n\n";
-            Iterator<PairSubmission> iter=pairSubmissions.iterator();
-            while(iter.hasNext()){
-                PairSubmission pairTemp=iter.next();
-                result+= pairTemp.subA.name + " , " + pairTemp.subB.name + "  similaration : " + pairTemp.percent() + "\n";
+            String result = "cid : " + cid + ",  pid: " + pid + "  -----------------------------------\n\n\n\n\n";
+            Iterator<PairSubmission> iter = pairSubmissions.iterator();
+            while (iter.hasNext()) {
+                PairSubmission pairTemp = iter.next();
+                result += pairTemp.subA.name + " , " + pairTemp.subB.name + "  similaration : " + pairTemp.percent() + "\n";
                 //pw.write(line);
             }
             pw.write(result);
             pw.close();
             fw.close();
-        }catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -369,9 +372,9 @@ public class Program implements ProgramI {
 
                 comOK++;
 
-                print("|----Compared " + s1.name + "-" + s2.name + " match percent: " + pairSubmission.percent()+"\n");
+                print("|----Compared " + s1.name + "-" + s2.name + " match percent: " + pairSubmission.percent() + "\n");
 
-                registerMatch(pairSubmission,  avgmatches);
+                registerMatch(pairSubmission, avgmatches);
                 options.setProgress(countAll * 100 / totalcomps);
 
             }
@@ -380,7 +383,7 @@ public class Program implements ProgramI {
         long time = System.currentTimeMillis() - msec;
         print("Total time for comparing submissions: " + ((time / 3600000 > 0) ? (time / 3600000) + " h " : "")
                 + ((time / 60000 > 0) ? ((time / 60000) % 60) + " min " : "") + (time / 1000 % 60) + " sec\n" + "Time per comparison: "
-                + (comOK==0?0 : (time / comOK)) + " msec\n");
+                + (comOK == 0 ? 0 : (time / comOK)) + " msec\n");
 
         //Cluster cluster = null;
         //if (options.clusterin g)
@@ -413,22 +416,21 @@ public class Program implements ProgramI {
         if (this.options.isReadCodeFromFile()) {//对文件夹中的代码查重
             run();
             System.gc();
-        }
-        else {//对比赛查重
-            this.options.dbHelper.setHasCDC(getCid(),false);
+        } else {//对比赛查重
+            this.options.dbHelper.setHasCDC(getCid(), false);
             this.options.dbHelper.setTaskID();
             while (this.options.dbHelper.isHaveProblemNotCheck()) {
                 try {
                     run();
-                }catch (ExitException e){
-                    if(e.getState()==ExitException.NOT_ENOUGH_SUBMISSIONS_ERROR){
+                } catch (ExitException e) {
+                    if (e.getState() == ExitException.NOT_ENOUGH_SUBMISSIONS_ERROR) {
                         print(e.getReport());
-                    }else
+                    } else
                         throw e;
                 }
                 System.gc();
             }
-            this.options.dbHelper.setHasCDC(getCid(),true);
+            this.options.dbHelper.setHasCDC(getCid(), true);
             this.options.dbHelper.removeTaskID();
         }
 

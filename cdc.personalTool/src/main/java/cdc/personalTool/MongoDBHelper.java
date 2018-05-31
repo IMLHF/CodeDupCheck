@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 public class MongoDBHelper implements DBHelper {
     private ProgramI program;
     private List<Document> problemList;
-    private static String DBNAME = "testlhf";
+    private static String DBNAME = "ojans";
     private static String HOST = "localhost";
     private static int PORT = 27017;
     private Document currentProblemDoc;
@@ -53,12 +53,12 @@ public class MongoDBHelper implements DBHelper {
         MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
         MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CONTEST");
         colSCONTEST.updateOne(Filters.eq("cid", program.getCid()),
-                Updates.set("task_id",program.getTaskID()));
+                Updates.set("task_id", program.getTaskID()));
         mongoClient.close();
     }
 
     @Override
-    public void setProgressToDB(int cid, int pid, String labelAndName, int state_progress, int state, String task_id,long time) {
+    public void setProgressToDB(int cid, int pid, String labelAndName, int state_progress, int state, String task_id, long time) {
         BasicDBObject progress = new BasicDBObject();
         int problem_progress;
         if (state == STATE_SUBMITTING) {
@@ -88,7 +88,7 @@ public class MongoDBHelper implements DBHelper {
                 + problem_progress) / problem_num;
         progress.put("contest_progress",
                 contest_progress);
-        progress.put("time",time);
+        progress.put("time", time);
 
 //        progress.put("task_id", task_id);
 
@@ -260,15 +260,18 @@ public class MongoDBHelper implements DBHelper {
                 int cid = Integer.parseInt(tmp.get("cid").toString());
                 int pid = Integer.parseInt(tmp.get("pid").toString());
                 int runid = Integer.parseInt(tmp.get("runid").toString());
+                int uid = Integer.parseInt(tmp.get("uid").toString());
                 String name;
-                if (program.isQuiet())
-                    name=tmp.getString("user_name");
-                else
-                    name = tmp.getString("user_name")+ "_Runid_" + runid;
+                if (program.isQuiet()) {
+                    name = tmp.getString("user_name");
+                }
+                else {
+                    name = tmp.getString("user_name") + "_Runid_" + runid;
+                }
                 //String code=tmp.get ("code").toString();
                 //code不再存在contest的信息文档中
                 String languageType = tmp.get("language").toString();
-                submissions.addElement(new SubmissionBase(cid, pid, runid, name, result, languageType));
+                submissions.addElement(new SubmissionBase(cid, pid, runid, uid, name, result, languageType));
             }
             return submissions;
         }
@@ -302,7 +305,6 @@ public class MongoDBHelper implements DBHelper {
              */
             BasicDBObject filters = new BasicDBObject("cid", cid);
             filters.put("pid", pid);//也可以使用Filters.and()
-
             if (program.isReCDC())
                 colSCONTEST_CDC_ANS.updateOne(filters,
                         Updates.set("comparisonPairs", doc.get("comparisonPairs")),

@@ -13,20 +13,23 @@ public class Submission implements Comparable<Submission>{
     private int cid;
     private int pid;
     private int runid;//from DB
+    private int uid;
 
     public int getCid(){return cid;}
     public int getPid(){return pid;}
     public int getRunid(){return runid;}
+    public int getUid(){return uid;}
     private String file;//from file
 
     public String name;
 
     public Structure struct;
 
-    public Submission(int cid,int pid,int runid, String name, Program p, Language language){
+    public Submission(int cid,int pid,int runid,int uid,String name, Program p, Language language){
         this.cid=cid;
         this.pid=pid;
         this.runid=runid;
+        this.uid=uid;
         this.name=name;
         this.program=p;
         this.language=language;
