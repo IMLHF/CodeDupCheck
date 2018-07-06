@@ -97,6 +97,7 @@ public class Parser extends cdc.Parser implements CPP14TokenConstants {
                 ParseTree pt = in.getChild(i);
                 ptw.walk(new CodeDCCPP14Listener(this), pt);
             }
+            System.gc();
 
         } catch (IOException e) {
             program.print("      |---- antlr4:Parsing Error in '" + runidOrFileName + "':\n" + e.getMessage() + "\n");

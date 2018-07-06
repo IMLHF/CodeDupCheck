@@ -24,6 +24,7 @@ public class Submission implements Comparable<Submission>{
     public String name;
 
     public Structure struct;
+    public boolean mongostructnull=true;
 
     public Submission(int cid,int pid,int runid,int uid,String name, Program p, Language language){
         this.cid=cid;
@@ -54,6 +55,10 @@ public class Submission implements Comparable<Submission>{
     public int tokenLength(){
         if(struct!=null)
             return struct.tokenLength();
+        if(!mongostructnull){
+            DBHelper dbHelper = program.getDBhelperInstance();
+            return dbHelper.getStructLengthByRunid(this.runid);
+        }
         return 0;
     }
 

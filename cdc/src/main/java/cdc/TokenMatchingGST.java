@@ -61,7 +61,7 @@ public class TokenMatchingGST implements TokenConstants {
 
     public final PairSubmission compare(Submission subA, Submission subB) {
         Submission A, B, tmp;
-        if (subA.struct.tokenLength() > subB.struct.tokenLength()) {
+        if (subA.tokenLength() > subB.tokenLength()) {
             A = subB;
             B = subA;
         } else {
@@ -80,9 +80,8 @@ public class TokenMatchingGST implements TokenConstants {
 
     //MML :最长子串的最小匹配
     private PairSubmission compare(Submission subA, Submission subB, int MML) {
-        Structure structA = subA.struct;
-        Structure structB = subB.struct;
-
+        Structure structA=subA.struct;
+        Structure structB=subB.struct;
         Token[] strA = structA.tokens;
         Token[] strB = structB.tokens;
         int tokenlengthA = structA.tokenLength();

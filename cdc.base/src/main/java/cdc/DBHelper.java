@@ -12,6 +12,9 @@ public interface DBHelper {
     public static final int STATE_COMPARING = 88;
     public static final int STATE_GENERATING_RESULT_TO_FILES = 100;
 
+    public int getStructLengthByRunid(int runid);
+    public Structure getStructByRunid(int runid);
+
     /**
      *
      */

@@ -38,6 +38,28 @@ public class MongoDBHelper implements DBHelper {
     }
 
     @Override
+    public int getStructLengthByRunid(int runid) {
+        return getTokensByRunid(runid).size();
+    }
+
+    @Override
+    public Structure getStructByRunid(int runid) {
+        ArrayList<Document> tokens=getTokensByRunid(runid);
+        Iterator<Document>iter=tokens.iterator();
+        Structure struct=new Structure();
+        while (iter.hasNext()){
+            Document tmpdoc = iter.next();
+            int type=Integer.parseInt(tmpdoc.get("type").toString());
+            String runidOrFileName=tmpdoc.get("runidOrFileName").toString();
+            int line=Integer.parseInt(tmpdoc.get("line").toString());
+            int column=Integer.parseInt(tmpdoc.get("column").toString());
+            int length=Integer.parseInt(tmpdoc.get("length").toString());
+            struct.addToken(new Token(type,runidOrFileName,line,column,length));
+        }
+        return struct;
+    }
+
+    @Override
     public void removeTaskID() {
         MongoClient mongoClient = new MongoClient(HOST, PORT);
         MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
@@ -129,6 +151,7 @@ public class MongoDBHelper implements DBHelper {
         MongoCollection<Document> colSCONTEST = mongoDB.getCollection("SDUTOJ_CONTEST");
         colSCONTEST.updateOne(Filters.eq("cid", cid),
                 Updates.set("hasCDC", isCDC));
+        mongoClient.close();
     }
 
     @Override
@@ -232,8 +255,11 @@ public class MongoDBHelper implements DBHelper {
 //            System.out.println(contestDoc.size());
 //
 //            System.out.println(contestDoc.get("cid").toString());
-//            System.out.println(contestDoc.keySet());//TODO
+//            System.out.println(contestDoc.keySet());
             problemList = (List<Document>) currentontestDoc.get("problem");
+//            for(int j=0;j<5;++j){//跳过题目
+//                problemList.remove(0);
+//            }
             problem_num = problemList.size();
 //            System.out.println(problemList.get(0).keySet());
             mongoClient.close();
@@ -264,8 +290,7 @@ public class MongoDBHelper implements DBHelper {
                 String name;
                 if (program.isQuiet()) {
                     name = tmp.getString("user_name");
-                }
-                else {
+                } else {
                     name = tmp.getString("user_name") + "_Runid_" + runid;
                 }
                 //String code=tmp.get ("code").toString();
@@ -287,12 +312,17 @@ public class MongoDBHelper implements DBHelper {
     @Override
     public void writeDocument(Document doc) throws cdc.exceptions.ExitException {
         long msec = System.currentTimeMillis();//开始时间
-        int cid = Integer.parseInt(doc.get("cid").toString());
-        int pid = Integer.parseInt(doc.get("pid").toString());
         try {
             MongoClient mongoClient = new MongoClient(HOST, PORT);
             MongoDatabase mongoDB = (mongoClient).getDatabase(DBNAME);
-            MongoCollection<Document> colSCONTEST_CDC_ANS = mongoDB.getCollection("SDUTOJ_CONTEST_CDC_ANS");
+            MongoCollection<Document> colSCONTEST_CDC_ANS = mongoDB.getCollection(
+                    "SDUTOJ_CONTEST_CDC_ANS");
+            MongoCollection<Document> colSCONTEST = mongoDB.getCollection(
+                    "SDUTOJ_CONTEST");
+            MongoCollection<Document> colUSER = mongoDB.getCollection(
+                    "SDUTOJ_USER");
+            MongoCollection<Document> colCONTESTUSER = mongoDB.getCollection(
+                    "SDUTOJ_CONTEST_USER");
 
             /**
              * 用来往集合中匹配cid和problem.$.pid的文档中的‘problem’列表中指定位置中添加一个键值对
@@ -303,17 +333,108 @@ public class MongoDBHelper implements DBHelper {
              * SDUTOJ.update({'cid':cid}, {'$set':{'pid.title':'2333333'},true)
              * 详细见博客MongoDB操作：
              */
-            BasicDBObject filters = new BasicDBObject("cid", cid);
-            filters.put("pid", pid);//也可以使用Filters.and()
-            if (program.isReCDC())
-                colSCONTEST_CDC_ANS.updateOne(filters,
-                        Updates.set("comparisonPairs", doc.get("comparisonPairs")),
-                        new UpdateOptions().upsert(true));
-            else {
-                colSCONTEST_CDC_ANS.updateOne(filters,
-                        Updates.addEachToSet("comparisonPairs", (List) doc.get("comparisonPairs")),
+//            BasicDBObject filters = new BasicDBObject("cid", cid);
+//            filters.put("pid", pid);//也可以使用Filters.and()
+//            if (program.isReCDC())
+//                colSCONTEST_CDC_ANS.updateOne(filters,
+//                        Updates.set("comparisonPairs", doc.get("comparisonPairs")),
+//                        new UpdateOptions().upsert(true));
+//            else {
+//                colSCONTEST_CDC_ANS.updateOne(filters,
+//                        Updates.addEachToSet("comparisonPairs", (List) doc.get("comparisonPairs")),
+//                        new UpdateOptions().upsert(true));
+//            }
+            /**
+             * 更改CDC ANS结构
+             */
+            List<BasicDBObject> comparePairList = (List<BasicDBObject>) doc.get("comparisonPairs");
+
+            int cid_ = Integer.parseInt(doc.get("cid").toString());
+            int pid_ = Integer.parseInt(doc.get("pid").toString());
+            BasicDBObject filters = new BasicDBObject("cid", cid_);
+//            System.out.println(pid);
+            filters.put("problem.pid", pid_);
+            colSCONTEST.updateOne(filters, Updates.set("problem.$.dupnum", comparePairList.size()));
+
+            Iterator<Document> tmpiter = colSCONTEST.find(new BasicDBObject("cid", cid_)).projection(
+                    new BasicDBObject("type", 1)
+            ).iterator();
+            //1 => Private
+            //2 => Register
+            //3 => Public
+            int _type = 1;
+            if (tmpiter.hasNext()) {
+                _type = Integer.parseInt(((Document) tmpiter.next()).get("type").toString());
+            }
+
+            Iterator<BasicDBObject> iter = comparePairList.iterator();
+            while (iter.hasNext()) {
+                BasicDBObject tmpdoc = iter.next();
+                int cid = Integer.parseInt(tmpdoc.get("cid").toString());
+                int pid = Integer.parseInt(tmpdoc.get("pid").toString());
+                int runidA = Integer.parseInt(tmpdoc.get("runidA").toString());
+                int runidB = Integer.parseInt(tmpdoc.get("runidB").toString());
+                int uidA = Integer.parseInt(tmpdoc.get("uidA").toString());
+                int uidB = Integer.parseInt(tmpdoc.get("uidB").toString());
+                String usernameA,usernameB,nicknameA,nicknameB;
+                if (_type != 2) {
+//                    System.out.println(uidA+" "+cid+" "+pid+" "+runidA);
+                    Iterator<Document> useriter=colUSER.find(new BasicDBObject("uid", uidA)).iterator();
+                    Document userdict;
+                    if(useriter.hasNext()){
+                        userdict=useriter.next();
+                    }else{
+                        userdict=colUSER.find(new BasicDBObject("uid", 1)).iterator().next();
+                    }
+                    usernameA = userdict.get("user_name").toString();
+                    nicknameA = userdict.get("nick_name").toString();
+
+                    useriter=colUSER.find(new BasicDBObject("uid", uidB)).iterator();
+                    if(useriter.hasNext()){
+                        userdict=useriter.next();
+                    }else{
+                        userdict=colUSER.find(new BasicDBObject("uid", 10)).iterator().next();
+                    }
+                    usernameB = userdict.get("nick_name").toString();
+                    nicknameB = userdict.get("nick_name").toString();
+                }else{
+//                    System.out.println(uidA+" "+runidA);
+                    Iterator<Document> useriter=colCONTESTUSER.find(new BasicDBObject("cuid", uidA)).iterator();
+                    Document userdict;
+                    if(useriter.hasNext()){
+                        userdict=useriter.next();
+                    }else{
+                        userdict=colCONTESTUSER.find(new BasicDBObject("cuid", 1)).iterator().next();
+                    }
+                    usernameA = userdict.get("user_name").toString();
+                    nicknameA = userdict.get("nick_name").toString();
+
+                    useriter=colCONTESTUSER.find(new BasicDBObject("cuid", uidB)).iterator();
+                    if(useriter.hasNext()){
+                        userdict=useriter.next();
+                    }else{
+                        userdict=colCONTESTUSER.find(new BasicDBObject("cuid", 10)).iterator().next();
+                    }
+                    usernameB = userdict.get("nick_name").toString();
+                    nicknameB = userdict.get("nick_name").toString();
+                }
+                tmpdoc.put("usernameA",usernameA);
+                tmpdoc.put("usernameB",usernameB);
+                tmpdoc.put("nicknameA",nicknameA);
+                tmpdoc.put("nicknameB",nicknameB);
+
+                BasicDBObject _filters = new BasicDBObject("cid", cid);
+                _filters.put("pid", pid);
+                _filters.put("runidA", runidA);
+                _filters.put("runidB", runidB);
+//                System.out.println(_filters);
+//                System.out.println(tmpdoc);
+                colSCONTEST_CDC_ANS.updateOne(_filters,
+                        new BasicDBObject("$set", tmpdoc),
                         new UpdateOptions().upsert(true));
             }
+
+
 //            BasicDBObject update=new BasicDBObject("$push",new BasicDBObject("problem.$.num",
 //                    new BasicDBObject("$each",doc.get("comparisonPairs"))));
 //            dbCollection_SSGSTANS.updateOne(filterCid,

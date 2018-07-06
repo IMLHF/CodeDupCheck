@@ -2,6 +2,7 @@ package cdc;
 
 import cdc.exceptions.ExitException;
 import cdc.option.Options;
+import com.mongodb.BasicDBObject;
 import org.bson.Document;
 
 import java.io.*;
@@ -83,6 +84,7 @@ public class Program implements ProgramI {
     }
 
     private void createSubmission() throws cdc.exceptions.ExitException {
+        System.gc();
         submissions = new Vector<Submission>();
         if (this.options.isReadCodeFromFile()) {
             File f = new File(options.root_dir);
@@ -165,6 +167,7 @@ public class Program implements ProgramI {
                 }
 
             }
+            System.out.println("submission size "+submissions.size());
             options.setProgress(100);
             nameSet = null;
         }
@@ -185,6 +188,7 @@ public class Program implements ProgramI {
 
         int invalid = 0;
         while (iter.hasNext()) {
+            System.gc();
             boolean parseOk;
             boolean removed = false;
             Submission subm = iter.next();
@@ -197,12 +201,16 @@ public class Program implements ProgramI {
                 print("          |----Submission contains fewer tokens than minimum match " + get_min_token_match() + "\n");
                 this.options.dbHelper.wirteParseAnsToMongo(subm.getRunid(), subm.struct);
                 subm.struct = null;
+                subm.mongostructnull=true;
                 invalid++;
                 removed = true;
             }
             if (parseOk && !removed) {
-                if (!this.options.isWriteResultToFile())
+                if (!this.options.isWriteResultToFile()){
                     this.options.dbHelper.wirteParseAnsToMongo(subm.getRunid(), subm.struct);
+                    subm.struct = null;
+                    subm.mongostructnull=false;
+                }
                 print("                                    |----OK\n");
             } else
                 print("          |----ERROR -> Submission removed\n");
@@ -233,14 +241,14 @@ public class Program implements ProgramI {
 
     private void writeResultsToMongo(SortedVector<PairSubmission> pairSubmissions
     ) throws ExitException {
-        List<Document> comparePairList = new ArrayList<Document>();
+        List<BasicDBObject> comparePairList = new ArrayList<BasicDBObject>();
         if (pairSubmissions.size() <= 0) {
             options.setState(Options.STATE_GENERATING_RESULT_TO_FILES);
             options.setProgress(0);
             print("未检查到相似代码！ similar code not found!");
-            Document doc = new Document("cid", getCid());
+            Document doc = new Document("comparisonPairs", comparePairList);
             doc.append("pid", options.getPid());
-            doc.append("comparisonPairs", comparePairList);
+            doc.append("cid", getCid());
             this.options.dbHelper.writeDocument(doc);
             options.setProgress(60);
             options.setProgress(100);
@@ -254,20 +262,19 @@ public class Program implements ProgramI {
 
         Iterator<PairSubmission> iter = pairSubmissions.iterator();
         while (iter.hasNext()) {
-            count++;
-            options.setProgress(count * 100 / totalResult);
             PairSubmission tmpPair = iter.next();
-            Document tmpDocument = new Document();
+            BasicDBObject tmpDocument = new BasicDBObject();
             tmpDocument.append("cid", tmpPair.subA.getCid());
 
+            tmpDocument.append("id",count);
             tmpDocument.append("runidA", tmpPair.subA.getRunid());
             tmpDocument.append("uidA", tmpPair.subA.getUid());
-            tmpDocument.append("codeNameA", tmpPair.subA.name);
-            tmpDocument.append("pidA", tmpPair.subA.getPid());
+//            tmpDocument.append("codeNameA", tmpPair.subA.name);
+            tmpDocument.append("pid", tmpPair.subA.getPid());
             tmpDocument.append("runidB", tmpPair.subB.getRunid());
             tmpDocument.append("uidB", tmpPair.subB.getUid());
-            tmpDocument.append("codeNameB", tmpPair.subB.name);
-            tmpDocument.append("pidB", tmpPair.subB.getPid());
+//            tmpDocument.append("codeNameB", tmpPair.subB.name);
+//            tmpDocument.append("pidB", tmpPair.subB.getPid());
 
             List<Document> matchesList = new ArrayList<Document>();
             Match[] matches = tmpPair.matches;
@@ -283,12 +290,15 @@ public class Program implements ProgramI {
             tmpDocument.append("matchesPercent", tmpPair.percent());
 
             comparePairList.add(tmpDocument);
+            count++;
+
+            options.setProgress(count * 100 / totalResult);
         }
         options.setProgress(100);
 
-        Document doc = new Document("cid", pairSubmissions.elementAt(0).subA.getCid());
+        Document doc = new Document("comparisonPairs", comparePairList);
         doc.append("pid", pairSubmissions.elementAt(0).subA.getPid());
-        doc.append("comparisonPairs", comparePairList);
+        doc.append("cid", pairSubmissions.elementAt(0).subA.getCid());
         this.options.dbHelper.writeDocument(doc);
 
     }
@@ -340,8 +350,7 @@ public class Program implements ProgramI {
     private void compare() throws ExitException {
         int size = submissions.size();
 
-        SortedVector<PairSubmission> avgmatches, maxmatches;
-        int dist[] = new int[10];
+        SortedVector<PairSubmission> avgmatches;
 
         avgmatches = new SortedVector<PairSubmission>(new PairSubmission.AvgComparator());
 
@@ -357,19 +366,26 @@ public class Program implements ProgramI {
         PairSubmission pairSubmission;
         for (i = 0; i < (size - 1); ++i) {
             s1 = submissions.elementAt(i);
-            if (s1.struct == null) {
+            if (s1.struct == null && s1.mongostructnull) {
                 countAll += (size - i - 1);
                 options.setProgress(countAll * 100 / totalcomps);
                 continue;
             }
             for (j = i + 1; j < size; j++) {
                 s2 = submissions.elementAt(j);
-                if (s2.struct == null) {
-                    countAll++;
+                if (s2.struct == null && s2.mongostructnull) {
                     continue;
                 }
+                DBHelper dbHelper=this.getDBhelperInstance();
+                if(s1.struct==null)
+                    s1.struct = dbHelper.getStructByRunid(s1.getRunid());
+                if(s2.struct==null)
+                    s2.struct = dbHelper.getStructByRunid(s2.getRunid());
                 pairSubmission = this.tokenMatchingGST.compare(s1, s2);
+                if(!s2.mongostructnull)
+                    s2.struct=null;
 
+                countAll++;
                 comOK++;
 
                 print("|----Compared " + s1.name + "-" + s2.name + " match percent: " + pairSubmission.percent() + "\n");
@@ -378,6 +394,9 @@ public class Program implements ProgramI {
                 options.setProgress(countAll * 100 / totalcomps);
 
             }
+            if(!s1.mongostructnull)
+                s1.struct=null;
+            System.gc();
         }
         options.setProgress(100);
         long time = System.currentTimeMillis() - msec;
